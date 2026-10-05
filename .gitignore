@@ -1,0 +1,11 @@
+# OS / エディタが自動で作るファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# 環境変数ファイル（パスワードや秘密鍵が入るので Git に含めない）
+.env
+.env.*
+!.env.example
