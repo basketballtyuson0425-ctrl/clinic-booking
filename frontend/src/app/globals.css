@@ -1,26 +1,19 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/*
+ * 色とフォントの設定。ここで決めた名前は Tailwind のクラスで使える
+ * （例：bg-brand、text-brand-dark、border-brand-light）
+ */
+@theme {
+  --color-brand: #2f7d5b; /* 基調の緑 */
+  --color-brand-dark: #1f5a40; /* 押したとき・強調 */
+  --color-brand-light: #e8f3ed; /* 薄い背景 */
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic",
+    "Meiryo", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f7f8f7;
+  color: #1f2a24;
+  font-family: var(--font-sans);
 }

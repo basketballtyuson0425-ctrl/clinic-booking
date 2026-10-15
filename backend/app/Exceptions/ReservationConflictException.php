@@ -11,19 +11,27 @@ use Illuminate\Http\JsonResponse;
  */
 class ReservationConflictException extends Exception
 {
+    /**
+     * @param  string  $reason  画面側で案内を切り替えるための目印（slot_taken：枠が埋まった／same_day：同じ人が同じ日に予約済み）
+     */
+    public function __construct(string $message, public readonly string $reason)
+    {
+        parent::__construct($message);
+    }
+
     public static function slotTaken(): self
     {
-        return new self('この時間はすでに予約が入りました。別の時間を選んでください。');
+        return new self('この時間はすでに予約が入りました。別の時間を選んでください。', 'slot_taken');
     }
 
     public static function sameDay(): self
     {
-        return new self('同じ日にすでにご予約があります。ご予約の変更は、予約管理ページまたはお電話でお願いします。');
+        return new self('同じ日にすでにご予約があります。ご予約の変更は、予約管理ページまたはお電話でお願いします。', 'same_day');
     }
 
     public function render(): JsonResponse
     {
-        return response()->json(['message' => $this->getMessage()], 409);
+        return response()->json(['message' => $this->getMessage(), 'reason' => $this->reason], 409);
     }
 
     /**

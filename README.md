@@ -55,7 +55,16 @@ php artisan admin:create
 ```bash
 cd frontend
 npm install
+cp .env.example .env.local    # Windows PowerShell の場合: Copy-Item .env.example .env.local
 ```
+
+`.env.local` で次の値を設定します。
+
+| 名前 | 内容 |
+|---|---|
+| `BACKEND_URL` | Laravel の URL（`/api` と `/sanctum` をここへ転送します） |
+| `NEXT_PUBLIC_CLINIC_NAME` | 画面に表示する接骨院の名前 |
+| `NEXT_PUBLIC_CLINIC_PHONE` | 画面に表示する電話番号（変更・キャンセルの問い合わせ先） |
 
 ## 開発サーバーの起動
 
@@ -73,7 +82,7 @@ cd frontend
 npm run dev
 ```
 
-- ブラウザでは http://localhost:3000 を開きます
+- ブラウザでは http://localhost:3000 を開きます（患者側の予約画面 `/reserve` が表示されます）
 - Laravel が動いているかは http://localhost:8000/up で確認できます（ヘルスチェック用の URL）
 
 ## テスト・コードチェック

@@ -192,7 +192,8 @@ class CreateReservationTest extends TestCase
 
         $this->postJson('/api/reservations', $this->payload())
             ->assertStatus(409)
-            ->assertJsonPath('message', 'この時間はすでに予約が入りました。別の時間を選んでください。');
+            ->assertJsonPath('message', 'この時間はすでに予約が入りました。別の時間を選んでください。')
+            ->assertJsonPath('reason', 'slot_taken');
         $this->assertDatabaseCount('reservations', 1);
     }
 
@@ -214,7 +215,8 @@ class CreateReservationTest extends TestCase
             'start_at' => '2026-11-06 16:00',
         ]))
             ->assertStatus(409)
-            ->assertJsonPath('message', '同じ日にすでにご予約があります。ご予約の変更は、予約管理ページまたはお電話でお願いします。');
+            ->assertJsonPath('message', '同じ日にすでにご予約があります。ご予約の変更は、予約管理ページまたはお電話でお願いします。')
+            ->assertJsonPath('reason', 'same_day');
         $this->assertDatabaseCount('reservations', 1);
     }
 

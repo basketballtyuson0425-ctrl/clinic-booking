@@ -165,6 +165,16 @@ GET/PUT    /api/admin/weekly-schedules
 - `/reservation/[token]`：予約管理ページ
 - 無効・期限切れの URL 用の画面
 
+### 患者側の予約画面の詳細（ステップ4で決定：2026-10-16）
+- `/` は `/reserve` へリダイレクトする
+- `/reserve` は1ページの中で「日付 → 時間 → 入力 → 確認 → 完了」を切り替える（URL は変えない）。各画面に「戻る」ボタンを置く
+- 構成：`src/app/reserve/_components/`（`ReservationFlow` が進行役、各段階の画面部品、画面側の入力チェック `form.ts`）、`src/lib/api.ts`（API 呼び出しとデータの型。エラーは `ApiError` にまとめる）、`src/lib/date.ts`、`src/lib/clinic.ts`
+- 予約時のエラーの扱い：409 `slot_taken` と 422 の `start_at` は時間の選択に戻して最新の ○／× を読み込み直す。その他の 422 は入力画面に戻して欄ごとに表示。409 `same_day`・429・通信失敗は確認画面に表示する
+- 409 の応答には、画面で案内を切り替えるための `reason`（`slot_taken` / `same_day`）を含める
+- 完了画面では、予約管理ページを開いてブックマークするよう案内する（URL は完了画面と確認メールでしか知らせないため）。メールがない場合は電話番号で変更・キャンセルを案内する
+- 接骨院の名前・電話番号は `NEXT_PUBLIC_CLINIC_NAME`・`NEXT_PUBLIC_CLINIC_PHONE`、Laravel の URL は `BACKEND_URL`（`frontend/.env.local`）で設定する
+- 見た目：スマートフォン基準（最大幅 `max-w-md`）、緑系の基調色、OS 標準の日本語フォント、ボタンの高さ 48px 前後・文字 16px 以上。ダークモードは使わない
+
 管理画面：
 - `/admin/login`
 - `/admin`（ダッシュボード）
@@ -186,6 +196,7 @@ GET/PUT    /api/admin/weekly-schedules
 - FormRequest でサーバー側の入力値チェック、`$fillable` で更新できる項目を限定、SQL は Eloquent とバインドのみで組み立てる
 - XSS 対策：`dangerouslySetInnerHTML` は使わない
 - ログに個人情報を出力しない。`.env` は Git に含めない。本番は `APP_DEBUG=false`
+- **【ステップ11で対応】転送時の IP アドレス**：Next.js の rewrites で転送すると、Laravel からはすべてのアクセスが Next.js のサーバーから来たように見えるため、IP アドレスごとの回数制限が全員まとめて数えられてしまう。本番の構成（Vercel・レンタルサーバー）に合わせて、転送元の情報（`X-Forwarded-For`）を信頼する設定（TrustProxies）と、偽装を防ぐ仕組みを用意する
 
 ## 9. 自動削除
 - Reservation モデルに `Prunable` を設定し、`end_at < now()->subYear()` の予約を削除対象にする
