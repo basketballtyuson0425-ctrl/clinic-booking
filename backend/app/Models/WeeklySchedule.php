@@ -20,4 +20,18 @@ class WeeklySchedule extends Model
             'is_closed' => 'boolean',
         ];
     }
+
+    /**
+     * 休診にする「第N週」を数の配列で返す。例："1,3" → [1, 3]、未設定 → []
+     *
+     * @return list<int>
+     */
+    public function closedWeeks(): array
+    {
+        if ($this->closed_weeks_of_month === null || $this->closed_weeks_of_month === '') {
+            return [];
+        }
+
+        return array_map('intval', explode(',', $this->closed_weeks_of_month));
+    }
 }

@@ -106,13 +106,25 @@ Laravel 標準のテーブル。新規登録 API は作らず、artisan コマ�
 ## 5. API
 公開 API（ログイン不要）：
 ```
-GET   /api/availability/dates?from=&to=
+GET   /api/availability/dates
 GET   /api/availability/{date}
 POST  /api/reservations
 GET   /api/manage/{token}
 PATCH /api/manage/{token}
 POST  /api/manage/{token}/cancel
 ```
+
+### 空き枠 API の詳細（ステップ2で決定：2026-10-16）
+- `GET /api/availability/dates` は期間を指定せず、常に予約可能期間（今日〜今日＋30日の31日分）を返す。返す項目は `date`・`is_closed`・`available`（空きが1枠以上あるか）。院長のカレンダーは別の API（`/api/admin/calendar`）で扱う
+- `GET /api/availability/{date}` は `date`・`is_closed`・`am`・`pm` を返す。`am`/`pm` は `[{ "time": "09:00", "available": true }, ...]`、休みの枠は `null`
+- 枠が ○ になる条件：予約中の予約がない、予約可能期間内、予約時刻の60分以上前（ちょうど60分前は予約できる）
+- 存在しない日付・予約可能期間外の日付は 422、日付の形ではない URL は 404
+- ○／× 以外の情報（予約者など）は返さない
+- 公開 API は同じ IP アドレスから1分あたり60回まで（`RateLimiter` の `public-api`）
+- 営業時間の決定は `App\Services\BusinessHours`、○／× の判定は `App\Services\Availability` にまとめる。予約・個別設定は期間分をまとめて1回で取得する
+- 枠は開始時刻から30分ずつ作り、終了時刻を超える枠は作らない（例：10:00〜12:45 → 10:00〜12:00 開始の5枠）
+- 祝日は `azuyalabs/yasumi` で判定する（振替休日・国民の休日を含む）
+- API のルートファイルは `php artisan install:api` で作成した。このとき Sanctum も導入される（使い始めるのはステップ7）
 管理 API（`auth:sanctum` によるログインが必要）：
 ```
 GET  /sanctum/csrf-cookie
