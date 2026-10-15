@@ -125,6 +125,23 @@ POST  /api/manage/{token}/cancel
 - 枠は開始時刻から30分ずつ作り、終了時刻を超える枠は作らない（例：10:00〜12:45 → 10:00〜12:00 開始の5枠）
 - 祝日は `azuyalabs/yasumi` で判定する（振替休日・国民の休日を含む）
 - API のルートファイルは `php artisan install:api` で作成した。このとき Sanctum も導入される（使い始めるのはステップ7）
+
+### 予約作成 API の詳細（ステップ3で決定：2026-10-16）
+- `POST /api/reservations` の入力：`patient_name`・`patient_phone`・`patient_email`（任意）・`patient_email_confirmation`・`visit_type`（`first` / `return`）・`treatment_request`（任意）・`start_at`（`Y-m-d H:i`）
+- 入力チェックは `StoreReservationRequest`（FormRequest）で行う
+  - 氏名：必須・100文字まで。電話番号：必須・全角を半角にそろえ、数字とハイフンのみ・0から始まる10〜11桁。保存はハイフンを残した形
+  - メールアドレス：任意・メール形式・255文字まで・確認用と一致。施術希望内容：任意・500文字まで
+  - 全角スペース・全角英数字は半角にそろえ、前後の空白を除く。空欄は NULL として扱う
+- エラーメッセージは `lang/ja/validation.php`（使うルールと項目名のみ）と `lang/ja.json` で日本語にする
+- 処理の順番（`App\Services\ReservationBooking`）
+  1. 患者が予約できる枠か（営業時間内の30分枠・予約可能期間内・60分前の締め切り前）→ だめなら 422（`start_at` のエラー）
+  2. その枠に予約中の予約があるか → 409「この時間はすでに予約が入りました。別の時間を選んでください。」
+  3. 同じ人（氏名＋電話番号を正規化）の同じ日の予約中の予約があるか → 409「同じ日にすでにご予約があります。…」
+  4. トランザクション内で保存。一意制約違反（確認と保存の間に他の予約が確定した）なら 2・3 を調べ直して 409
+- 409 は `App\Exceptions\ReservationConflictException` で返す（想定内の出来事なのでエラーログには記録しない）
+- 予約管理トークン：`bin2hex(random_bytes(32))` の64文字。DB には SHA-256 のハッシュ値だけを保存し、トークンはこの API の応答でだけ返す
+- 成功時は 201 で `start_at`・`patient_name`・`has_email`・`manage_token` を返す
+- 予約の登録は、公開 API 全体の制限（1分60回）に加えて、同じ IP アドレスから1分あたり10回まで（`RateLimiter` の `reservation-create`）
 管理 API（`auth:sanctum` によるログインが必要）：
 ```
 GET  /sanctum/csrf-cookie

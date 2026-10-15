@@ -91,6 +91,24 @@ class Reservation extends Model
     }
 
     /**
+     * 予約管理 URL 用の鍵（トークン）を新しく発行する。
+     * DB にはハッシュ値だけを保存し、鍵そのものは戻り値としてだけ返す（呼び出し側で save() すること）。
+     * 推測できないよう、暗号用の乱数 32 バイトから 64 文字の鍵を作る。
+     */
+    public function issueManageToken(): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $this->manage_token_hash = self::hashToken($token);
+
+        return $token;
+    }
+
+    public static function hashToken(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
+    /**
      * 同一人物の判定用に氏名の表記ゆれをそろえる。
      * 例：「山田 太郎」「山田　太郎」「山田太郎」→「山田太郎」
      */
