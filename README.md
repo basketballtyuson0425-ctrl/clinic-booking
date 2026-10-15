@@ -39,6 +39,15 @@ composer install
 cp .env.example .env          # Windows PowerShell の場合: Copy-Item .env.example .env
 php artisan key:generate
 php artisan migrate           # database/database.sqlite がなければ作成するか確認されます
+php artisan db:seed           # 曜日ごとの基本の営業時間を登録（何度実行しても重複しません）
+php artisan admin:create      # 院長のログイン用アカウントを作成（名前・メール・パスワードを聞かれます）
+```
+
+本番環境でも、初回は次のコマンドで基本の営業時間を登録し、院長アカウントを作成してください。
+
+```bash
+php artisan db:seed --class=WeeklyScheduleSeeder --force
+php artisan admin:create
 ```
 
 ### フロントエンド（Next.js）

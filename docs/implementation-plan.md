@@ -89,6 +89,20 @@ Laravel 標準のテーブル。新規登録 API は作らず、artisan コマ�
 - アプリ側の事前チェックはエラーメッセージを分かりやすくするためのもので、最終的な防御は DB の制約
 - 予約中／キャンセルの切り替えはモデルのメソッドにまとめ、`active_*` カラムの更新漏れを防ぐ
 
+### DB・モデルの詳細（ステップ1で決定：2026-10-15）
+- `end_at`・`name_key`・`phone_key`・`active_start_at`・`active_date` は、Reservation モデルの `saving` イベントで保存のたびに計算し直す。キャンセルは `Reservation::cancel(CancelledBy)` で行う
+- `status`・`*_key`・`active_*`・`manage_token_hash` は `$fillable` に含めない（外部から渡された値で直接書き換えられないようにする）
+- 選択肢のある列（visit_type・status・source・cancelled_by、mail_logs の type・status）は文字列で保存し、PHP の Enum（`app/Enums`）でキャストする
+- 日時の列は `datetime` 型にする（`timestamp` 型のタイムゾーン変換と 2038 年問題を避けるため）
+- `date` 型の列（`business_day_overrides.date`・`reservations.active_date`）は Laravel の date キャストを使わず、`Y-m-d` の文字列で扱う。`time` 型の列は `H:i:s` の文字列で扱う
+- 文字数の上限：氏名100文字、電話番号20文字、メールアドレス255文字
+- 表記ゆれのそろえ方
+  - 氏名：全角英数字→半角、半角カナ→全角カナ、英字は小文字にし、空白（全角・半角）を除く
+  - 電話番号：全角数字→半角にし、数字以外を除く
+  - 漢字とかなの違い（「山田太郎」と「やまだたろう」）は別人として扱う
+- 院長アカウントは `php artisan admin:create` で作成する。アカウントがすでにある場合は作らない。パスワードは12文字以上
+- 曜日ごとの基本設定は `WeeklyScheduleSeeder` で登録する。アプリの動作に必要なデータなので、本番環境でも実行する
+
 ## 5. API
 公開 API（ログイン不要）：
 ```
