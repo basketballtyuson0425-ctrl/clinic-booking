@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Enums\MailStatus;
 use App\Enums\MailType;
+use App\Mail\ReservationCancelled;
+use App\Mail\ReservationChanged;
 use App\Mail\ReservationReceived;
 use App\Models\MailLog;
 use App\Models\Reservation;
@@ -34,6 +36,32 @@ class ReservationMailer
         }
 
         return $this->send($reservation, MailType::Reserved, new ReservationReceived($reservation, self::manageUrl($token)));
+    }
+
+    /**
+     * 予約変更のお知らせを送る。メールアドレスがなければ何もしない
+     *
+     * @param  string  $token  予約管理 URL の鍵（予約管理ページからの変更なので、リクエストの URL に含まれている）
+     */
+    public function sendChanged(Reservation $reservation, string $token): bool
+    {
+        if ($reservation->patient_email === null) {
+            return false;
+        }
+
+        return $this->send($reservation, MailType::Changed, new ReservationChanged($reservation, self::manageUrl($token)));
+    }
+
+    /**
+     * 予約キャンセルのお知らせを送る。メールアドレスがなければ何もしない
+     */
+    public function sendCancelled(Reservation $reservation): bool
+    {
+        if ($reservation->patient_email === null) {
+            return false;
+        }
+
+        return $this->send($reservation, MailType::Cancelled, new ReservationCancelled($reservation));
     }
 
     /**

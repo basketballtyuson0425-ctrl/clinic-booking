@@ -12,6 +12,21 @@ const nextConfig: NextConfig = {
       { source: "/sanctum/:path*", destination: `${backendUrl}/sanctum/:path*` },
     ];
   },
+
+  async headers() {
+    return [
+      {
+        // 予約管理ページの URL には鍵が入っているので、
+        // ・リンク先のサイトに URL を伝えない（no-referrer）
+        // ・検索エンジンに載せない（noindex）
+        source: "/reservation/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

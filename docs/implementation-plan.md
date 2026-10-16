@@ -142,6 +142,18 @@ POST  /api/manage/{token}/cancel
 - 予約管理トークン：`bin2hex(random_bytes(32))` の64文字。DB には SHA-256 のハッシュ値だけを保存し、トークンはこの API の応答でだけ返す
 - 成功時は 201 で `start_at`・`patient_name`・`has_email`・`manage_token` を返す
 - 予約の登録は、公開 API 全体の制限（1分60回）に加えて、同じ IP アドレスから1分あたり10回まで（`RateLimiter` の `reservation-create`）
+
+### 予約管理 API の詳細（ステップ6で決定：2026-10-16）
+- `{token}` は64文字の `0-9a-f` のみ受け付ける。DB のハッシュ値と一致し、かつ `end_at` を過ぎていない予約だけを対象にする（それ以外は 404「この予約管理ページは無効か、有効期限が切れています。」）。キャンセル済みでも終了時刻までは表示できる
+- 応答は `{ reservation: {...}, changed?, mail_sent? }`。`reservation` には `start_at`・`end_at`・`status`・`patient_name`・`patient_phone_masked`・`patient_email_masked`・`visit_type`・`treatment_request`・`has_email`・`can_modify`・`cannot_modify_reason`・`modifiable_until` を含める
+- 電話番号は最初の3桁と最後の4桁だけ、メールアドレスは @ の前の最初の2文字だけを見せる（URL が他人に見られた場合に備える）
+- 変更・キャンセルできる条件：予約中・メールアドレスあり・予約時刻の60分前まで。満たさない場合は 403 と `reason`（`cancelled` / `no_email` / `deadline_passed`）
+- 変更（`PATCH`）は `start_at`・`treatment_request` のうち送られた項目だけを変える。新しい日時は新規予約と同じルール（422）と重複チェック（409、自分自身は除く）を通す。同じ行を上書きする（変更履歴は残さない）。何も変わらなければ `changed: false` でメールも送らない
+- キャンセル（`POST .../cancel`）は `cancelled_by = patient` でキャンセル済みにする
+- 変更・キャンセルのお知らせメール（`ReservationChanged`・`ReservationCancelled`）を送り、`mail_logs` に記録する。変更メールの予約管理 URL には、リクエストの URL に含まれる鍵を使う
+- 応答に `Cache-Control: no-store, private` を付ける。アクセス制限は同じ IP から1分30回（`RateLimiter` の `manage`）
+- 画面 `/reservation/[token]` には `Referrer-Policy: no-referrer` と `X-Robots-Tag: noindex, nofollow`（`next.config.ts` の headers）、`<meta name="robots">`・`<meta name="referrer">` を付ける
+- 日付・時間の選択部品（`DateStep`・`TimeStep`）と見た目の定義（`ui.ts`）は、予約画面と予約管理ページの共通部品として `frontend/src/components/` に置く
 管理 API（`auth:sanctum` によるログインが必要）：
 ```
 GET  /sanctum/csrf-cookie

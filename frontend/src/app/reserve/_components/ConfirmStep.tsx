@@ -2,7 +2,7 @@
 
 import { formatDateTime } from "@/lib/date";
 import { normalizeEmail, normalizePhone, type ReservationForm } from "./form";
-import { alertBox, primaryButton, secondaryButton } from "./ui";
+import { alertBox, primaryButton, secondaryButton } from "@/components/ui";
 
 type Props = {
   startAt: string;

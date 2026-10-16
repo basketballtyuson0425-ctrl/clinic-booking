@@ -44,13 +44,36 @@ export type ReservationCreated = {
   manage_token: string;
 };
 
+/** 予約管理ページに表示する予約（GET /api/manage/{token}） */
+export type ManagedReservation = {
+  start_at: string; // "2026-10-20 10:00"
+  end_at: string;
+  status: "reserved" | "cancelled";
+  patient_name: string;
+  patient_phone_masked: string; // "090-****-5678"
+  patient_email_masked: string | null; // "ha****@example.com"
+  visit_type: VisitType;
+  treatment_request: string | null;
+  has_email: boolean;
+  can_modify: boolean; // オンラインで変更・キャンセルできるか
+  cannot_modify_reason: "cancelled" | "no_email" | "deadline_passed" | null;
+  modifiable_until: string; // 変更・キャンセルの期限（予約時刻の1時間前）
+};
+
+/** 予約管理 API の返事 */
+export type ManageResponse = {
+  reservation: ManagedReservation;
+  changed?: boolean; // 変更したとき：実際に何か変わったか
+  mail_sent?: boolean; // 変更・キャンセルしたとき：お知らせメールを送れたか
+};
+
 /** API がエラーを返したとき（または通信に失敗したとき）に投げるエラー */
 export class ApiError extends Error {
   constructor(
     public readonly status: number, // HTTP ステータスコード（通信失敗は 0）
     message: string,
     public readonly fieldErrors: Record<string, string[]> = {}, // 422 のときの項目ごとのエラー
-    public readonly reason: string | null = null, // 409 のときの理由（slot_taken / same_day）
+    public readonly reason: string | null = null, // 409・403 のときの理由（slot_taken / same_day / deadline_passed など）
   ) {
     super(message);
   }
@@ -106,4 +129,23 @@ export function createReservation(input: ReservationInput): Promise<ReservationC
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export function fetchManagedReservation(token: string): Promise<ManageResponse> {
+  return request<ManageResponse>(`/api/manage/${token}`);
+}
+
+/** 予約日時・施術希望内容を変更する（送った項目だけが変わる） */
+export function updateManagedReservation(
+  token: string,
+  changes: { start_at?: string; treatment_request?: string },
+): Promise<ManageResponse> {
+  return request<ManageResponse>(`/api/manage/${token}`, {
+    method: "PATCH",
+    body: JSON.stringify(changes),
+  });
+}
+
+export function cancelManagedReservation(token: string): Promise<ManageResponse> {
+  return request<ManageResponse>(`/api/manage/${token}/cancel`, { method: "POST" });
 }

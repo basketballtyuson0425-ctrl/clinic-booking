@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\CancelledBy;
 use App\Enums\ReservationSource;
 use App\Exceptions\ReservationConflictException;
+use App\Exceptions\ReservationNotModifiableException;
 use App\Models\Reservation;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -32,14 +34,7 @@ class ReservationBooking
      */
     public function createForPatient(array $data): array
     {
-        $startAt = CarbonImmutable::createFromFormat('Y-m-d H:i', $data['start_at'])->startOfMinute();
-
-        // 営業時間内の30分枠・予約可能期間内・締め切り前か（○／× の画面と同じルール）
-        if (! $this->availability->isBookableSlot($startAt)) {
-            throw ValidationException::withMessages([
-                'start_at' => '選択した日時は予約できません。別の日時を選んでください。',
-            ]);
-        }
+        $startAt = $this->bookableStartAt($data['start_at']);
 
         $reservation = new Reservation([
             ...$data,
@@ -51,6 +46,81 @@ class ReservationBooking
         $this->save($reservation);
 
         return [$reservation, $token];
+    }
+
+    /**
+     * 患者が予約管理ページから、予約日時・施術希望内容を変更する。
+     * 同じ行を上書きするので、新しい枠の確保と元の枠の解放が1回の更新で同時に行われる。
+     *
+     * @param  array{start_at?: string, treatment_request?: string|null}  $data  UpdateManagedReservationRequest でチェック済みの入力
+     * @return bool 何か変更されたか
+     *
+     * @throws ReservationNotModifiableException 変更できない状態のとき（403）
+     * @throws ValidationException 新しい日時が予約できないとき（422）
+     * @throws ReservationConflictException 他の予約とぶつかったとき（409）
+     */
+    public function changeForPatient(Reservation $reservation, array $data): bool
+    {
+        $this->ensurePatientCanModify($reservation);
+
+        if (array_key_exists('start_at', $data)) {
+            $startAt = CarbonImmutable::createFromFormat('Y-m-d H:i', $data['start_at'])->startOfMinute();
+            // 同じ日時が送られてきた場合は、日時は変更しない
+            if (! $startAt->equalTo($reservation->start_at)) {
+                $reservation->start_at = $this->bookableStartAt($data['start_at']);
+            }
+        }
+
+        if (array_key_exists('treatment_request', $data)) {
+            $reservation->treatment_request = $data['treatment_request'];
+        }
+
+        if (! $reservation->isDirty()) {
+            return false;
+        }
+
+        $this->save($reservation);
+
+        return true;
+    }
+
+    /**
+     * 患者が予約管理ページからキャンセルする（データは消さず「キャンセル済み」にする）
+     *
+     * @throws ReservationNotModifiableException キャンセルできない状態のとき（403）
+     */
+    public function cancelForPatient(Reservation $reservation): void
+    {
+        $this->ensurePatientCanModify($reservation);
+
+        $reservation->cancel(CancelledBy::Patient);
+    }
+
+    /**
+     * 患者が予約できる日時かを確かめて返す（営業時間内の30分枠・予約可能期間内・締め切り前。○／× の画面と同じルール）
+     *
+     * @throws ValidationException 予約できない日時のとき（422）
+     */
+    private function bookableStartAt(string $value): CarbonImmutable
+    {
+        $startAt = CarbonImmutable::createFromFormat('Y-m-d H:i', $value)->startOfMinute();
+
+        if (! $this->availability->isBookableSlot($startAt)) {
+            throw ValidationException::withMessages([
+                'start_at' => '選択した日時は予約できません。別の日時を選んでください。',
+            ]);
+        }
+
+        return $startAt;
+    }
+
+    private function ensurePatientCanModify(Reservation $reservation): void
+    {
+        $reason = $reservation->patientCannotModifyReason();
+
+        if ($reason !== null) {
+            throw new ReservationNotModifiableException($reason);
+        }
     }
 
     private function save(Reservation $reservation): void

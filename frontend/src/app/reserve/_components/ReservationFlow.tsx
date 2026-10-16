@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { ApiError, createReservation, type ReservationCreated } from "@/lib/api";
 import ConfirmStep from "./ConfirmStep";
-import DateStep from "./DateStep";
+import DateStep from "@/components/DateStep";
 import DoneStep from "./DoneStep";
 import { emptyForm, SERVER_FIELD_TO_FORM, toReservationInput, type FormErrors, type ReservationForm } from "./form";
 import InfoStep from "./InfoStep";
 import StepIndicator from "./StepIndicator";
-import TimeStep from "./TimeStep";
+import TimeStep from "@/components/TimeStep";
 
 type Step = "date" | "time" | "info" | "confirm" | "done";
 const STEP_ORDER: Step[] = ["date", "time", "info", "confirm", "done"];

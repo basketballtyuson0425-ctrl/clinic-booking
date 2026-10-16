@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AvailabilityController;
+use App\Http\Controllers\ManageReservationController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,4 +16,14 @@ Route::middleware('throttle:public-api')->group(function () {
     // 予約の登録は、いたずらで大量に入れられないよう、さらに厳しく制限する
     Route::post('/reservations', [ReservationController::class, 'store'])
         ->middleware('throttle:reservation-create');
+
+    // 予約管理ページ。{token} は64文字の英数字（0-9a-f）だけを受け付ける（それ以外は 404）
+    Route::prefix('/manage/{token}')
+        ->where(['token' => '[0-9a-f]{64}'])
+        ->middleware('throttle:manage')
+        ->group(function () {
+            Route::get('/', [ManageReservationController::class, 'show']);
+            Route::patch('/', [ManageReservationController::class, 'update']);
+            Route::post('/cancel', [ManageReservationController::class, 'cancel']);
+        });
 });

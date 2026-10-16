@@ -2,7 +2,6 @@
 
 namespace App\Mail;
 
-use App\Enums\VisitType;
 use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -34,19 +33,6 @@ class ReservationReceived extends Mailable
 
     public function content(): Content
     {
-        $reservation = $this->reservation;
-
-        return new Content(
-            text: 'mail.reservation-received',
-            with: [
-                // 例：2026年11月6日（金）10:00〜10:30
-                'dateTime' => $reservation->start_at->locale('ja')->isoFormat('YYYY年M月D日（ddd）H:mm')
-                    .'〜'.$reservation->end_at->format('H:i'),
-                'visitType' => $reservation->visit_type === VisitType::First ? '初めて' : '2回目以降',
-                'treatmentRequest' => $reservation->treatment_request ?? '（なし）',
-                'clinicName' => config('clinic.name'),
-                'clinicPhone' => config('clinic.phone'),
-            ],
-        );
+        return new Content(text: 'mail.reservation-received');
     }
 }

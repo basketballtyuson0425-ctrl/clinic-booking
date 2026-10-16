@@ -3,7 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { formatDateTime } from "@/lib/date";
 import { validateForm, type FormErrors, type ReservationForm } from "./form";
-import { primaryButton, secondaryButton } from "./ui";
+import { primaryButton, secondaryButton } from "@/components/ui";
 
 type Props = {
   startAt: string; // "2026-10-20 09:00"

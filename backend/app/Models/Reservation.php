@@ -6,6 +6,7 @@ use App\Enums\CancelledBy;
 use App\Enums\ReservationSource;
 use App\Enums\ReservationStatus;
 use App\Enums\VisitType;
+use App\Services\Availability;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -106,6 +107,81 @@ class Reservation extends Model
     public static function hashToken(string $token): string
     {
         return hash('sha256', $token);
+    }
+
+    /**
+     * 予約管理 URL の鍵から予約を探す。予約の終了時刻を過ぎたものは見つからない扱いにする（URL の無効化）
+     */
+    public static function findByManageToken(string $token): ?self
+    {
+        return self::query()
+            ->where('manage_token_hash', self::hashToken($token))
+            ->where('end_at', '>', now())
+            ->first();
+    }
+
+    /**
+     * 患者が予約管理ページから変更・キャンセルできない理由。できる場合は null
+     *
+     * @return 'cancelled'|'no_email'|'deadline_passed'|null
+     */
+    public function patientCannotModifyReason(): ?string
+    {
+        if ($this->status === ReservationStatus::Cancelled) {
+            return 'cancelled';
+        }
+        // メールアドレスがない予約は確認のみ。変更・キャンセルは電話で受け付ける
+        if ($this->patient_email === null) {
+            return 'no_email';
+        }
+        if (! Availability::isBeforeDeadline($this->start_at)) {
+            return 'deadline_passed';
+        }
+
+        return null;
+    }
+
+    /**
+     * 例：2026年11月6日（金）10:00〜10:30
+     */
+    public function dateTimeLabel(): string
+    {
+        return $this->start_at->locale('ja')->isoFormat('YYYY年M月D日（ddd）H:mm').'〜'.$this->end_at->format('H:i');
+    }
+
+    /**
+     * 電話番号の一部を伏せる（最初の3桁と最後の4桁だけ見せる）。例：090-1234-5678 → 090-****-5678
+     */
+    public function maskedPhone(): string
+    {
+        $digitCount = strlen(self::normalizePhone($this->patient_phone));
+        $digitIndex = 0;
+        $masked = '';
+
+        foreach (str_split($this->patient_phone) as $char) {
+            if (ctype_digit($char)) {
+                $masked .= ($digitIndex >= 3 && $digitIndex < $digitCount - 4) ? '*' : $char;
+                $digitIndex++;
+            } else {
+                $masked .= $char;
+            }
+        }
+
+        return $masked;
+    }
+
+    /**
+     * メールアドレスの一部を伏せる（@ の前は最初の2文字だけ見せる）。例：hanako@example.com → ha****@example.com
+     */
+    public function maskedEmail(): ?string
+    {
+        if ($this->patient_email === null) {
+            return null;
+        }
+
+        [$local, $domain] = explode('@', $this->patient_email, 2);
+
+        return mb_substr($local, 0, min(2, mb_strlen($local) - 1)).'****@'.$domain;
     }
 
     /**

@@ -31,5 +31,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('reservation-create', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        // 予約管理ページの API：同じ IP アドレスから1分あたり30回まで
+        RateLimiter::for('manage', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
     }
 }

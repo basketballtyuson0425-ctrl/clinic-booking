@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReservationCreated } from "@/lib/api";
 import { clinic } from "@/lib/clinic";
 import { formatDateTime } from "@/lib/date";
-import { primaryButton } from "./ui";
+import { primaryButton } from "@/components/ui";
 
 type Props = {
   result: ReservationCreated;
