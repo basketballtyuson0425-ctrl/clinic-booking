@@ -65,6 +65,13 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // 開発中のメール（MAIL_MAILER=log）の書き出し先。普通のログと分けて、文面を確かめやすくする
+        'mail' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/mail.log'),
+            'level' => 'debug',
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

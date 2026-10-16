@@ -27,9 +27,18 @@ export default function DoneStep({ result }: Props) {
         </div>
       </dl>
 
-      {result.has_email && (
+      {result.has_email && result.mail_sent && (
         <p className="rounded-lg bg-brand-light px-4 py-3 text-sm text-brand-dark">
           ご入力のメールアドレスに確認メールを送信しました。
+        </p>
+      )}
+
+      {/* 送信に失敗しても予約は成立している。届かないメールを待たせないよう、はっきり伝える */}
+      {result.has_email && !result.mail_sent && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+          確認メールの送信に失敗しました。ご予約は完了しています。
+          <br />
+          お手数ですが、下のボタンから予約管理ページを開き、必ずブックマークなどで保存してください。
         </p>
       )}
 
@@ -40,7 +49,7 @@ export default function DoneStep({ result }: Props) {
         <p className="text-sm text-gray-600">
           上のボタンから予約管理ページを開き、そのページをブックマークなどで保存してください。この画面を閉じると、予約管理ページの
           URL は表示できなくなります。
-          {result.has_email && "確認メールにも同じ URL を記載しています。"}
+          {result.mail_sent && "確認メールにも同じ URL を記載しています。"}
         </p>
       </div>
 

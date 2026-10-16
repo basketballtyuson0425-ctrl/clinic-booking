@@ -40,6 +40,7 @@ export type ReservationCreated = {
   start_at: string;
   patient_name: string;
   has_email: boolean;
+  mail_sent: boolean; // 確認メールを送れたか（メールアドレスがない場合は false）
   manage_token: string;
 };
 

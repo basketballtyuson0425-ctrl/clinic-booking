@@ -43,6 +43,14 @@ php artisan db:seed           # 曜日ごとの基本の営業時間を登録（
 php artisan admin:create      # 院長のログイン用アカウントを作成（名前・メール・パスワードを聞かれます）
 ```
 
+`backend/.env` で次の値を設定します（`.env.example` に初期値があります）。
+
+| 名前 | 内容 |
+|---|---|
+| `CLINIC_NAME`・`CLINIC_PHONE` | メールに記載する接骨院の名前と電話番号 |
+| `FRONTEND_URL` | 患者側の画面の URL（メールに載せる予約管理ページのリンクに使います） |
+| `MAIL_MAILER` など `MAIL_*` | メールの送信方法。開発中は `log`（実際には送信しない） |
+
 本番環境でも、初回は次のコマンドで基本の営業時間を登録し、院長アカウントを作成してください。
 
 ```bash
@@ -100,4 +108,5 @@ npm run lint         # ESLint によるコードチェック
 ## 注意
 
 - `.env` にはパスワードや秘密鍵が入るため、Git に含めません（`.gitignore` で除外しています）
-- 開発中のメールは送信されず、`backend/storage/logs/laravel.log` に書き出されます（`MAIL_MAILER=log`）
+- 開発中のメールは送信されず、`backend/storage/logs/mail.log` に書き出されます（`MAIL_MAILER=log`・`MAIL_LOG_CHANNEL=mail`）
+- ポート 3000 がほかのアプリで使われていると、Next.js は 3001 などで起動します。その場合は `backend/.env` の `FRONTEND_URL` も合わせてください

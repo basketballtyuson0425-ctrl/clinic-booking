@@ -188,6 +188,15 @@ GET/PUT    /api/admin/weekly-schedules
 - 再送するときはトークンを作り直す（DB にはハッシュ値しか保存していないため）
 - 営業時間の変更で影響を受ける予約は、メールアドレスがある患者に `hours_changed` メールを送る。管理画面では「要連絡」として表示する（新しい営業時間から外れている予約をその場で判定する）
 
+### メールの詳細（ステップ5で決定：2026-10-16）
+- メールはテキストのみ（HTML メール・Laravel の Markdown メールは使わない）。本文は `resources/views/mail/*.blade.php`。テキストなので `{!! !!}` で表示する
+- 送信と記録は `App\Services\ReservationMailer` にまとめる。送信は `try / catch` で囲み、成功・失敗を `mail_logs` に記録する。失敗時の `laravel.log` には予約番号と種類だけを書き、個人情報は書かない
+- 予約完了メール（`App\Mail\ReservationReceived`）の件名は「【接骨院名】ご予約を承りました」。本文に氏名・予約日時・初回／再来・施術希望内容・予約管理ページの URL・変更とキャンセルの案内・電話番号を記載する
+- 予約管理ページの URL は `FRONTEND_URL` ＋ `/reservation/{トークン}`。接骨院の名前・電話番号は `CLINIC_NAME`・`CLINIC_PHONE`（`config/clinic.php`）。送信元の名前は `MAIL_FROM_NAME`
+- 予約作成 API の応答に `mail_sent`（送信できたか）を追加。送信に失敗した場合、完了画面は「確認メールの送信に失敗しました。ご予約は完了しています」と表示し、予約管理ページの保存を案内する
+- 開発中のメールは `storage/logs/mail.log` に書き出す（`MAIL_LOG_CHANNEL=mail`）
+- 変更・キャンセルのメールはステップ6、院長の再送はステップ8、営業時間変更のお知らせはステップ9で、それぞれの機能と一緒に作る
+
 ## 8. セキュリティ
 - Sanctum の SPA 認証（Cookie とセッション）と CSRF 対策。ログイン成功時にセッション ID を作り直す
 - ログイン試行の制限：RateLimiter で「メールアドレス＋IP ごとに5回失敗したら一定時間ロック」
