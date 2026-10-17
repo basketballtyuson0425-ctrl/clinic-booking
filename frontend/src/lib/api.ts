@@ -83,10 +83,35 @@ function defaultMessage(status: number): string {
   if (status === 429) {
     return "アクセスが集中しています。少し時間をおいてから、もう一度お試しください。";
   }
+  if (status === 401) {
+    return "ログインしてください。";
+  }
+  if (status === 419) {
+    return "画面を開いてから時間がたちました。もう一度お試しください。";
+  }
   return "エラーが発生しました。時間をおいてもう一度お試しいただくか、お電話でご予約ください。";
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/**
+ * サーバーの文章をそのまま画面に出すか。
+ * 403・404・409・422 はこのアプリが日本語の文章を返す。それ以外（401・419・429 や障害）は
+ * Laravel が英語の文章を返すことがあるので、画面側で用意した文章を使う。
+ * ただし 429 でも、ログインの制限（項目ごとのエラーがある）のときはサーバーの文章を使う。
+ */
+function shouldUseServerMessage(status: number, body: { errors?: unknown } | null): boolean {
+  return [403, 404, 409, 422].includes(status) || (status === 429 && body?.errors !== undefined);
+}
+
+/**
+ * API を呼ぶ共通の関数。エラーのときは ApiError を投げる（管理画面の adminApi.ts からも使う）
+ *
+ * @param extraHeaders 追加で付けたい見出し（管理画面の CSRF の合言葉など）
+ */
+export async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  extraHeaders: Record<string, string> = {},
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(path, {
@@ -94,6 +119,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       headers: {
         Accept: "application/json",
         ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...extraHeaders,
       },
     });
   } catch {
@@ -106,7 +132,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     throw new ApiError(
       response.status,
-      body?.message ?? defaultMessage(response.status),
+      (shouldUseServerMessage(response.status, body) ? body?.message : null) ?? defaultMessage(response.status),
       body?.errors ?? {},
       body?.reason ?? null,
     );

@@ -212,6 +212,19 @@ GET/PUT    /api/admin/weekly-schedules
 ## 8. セキュリティ
 - Sanctum の SPA 認証（Cookie とセッション）と CSRF 対策。ログイン成功時にセッション ID を作り直す
 - ログイン試行の制限：RateLimiter で「メールアドレス＋IP ごとに5回失敗したら一定時間ロック」
+
+### 院長のログインの詳細（ステップ7で決定：2026-10-18）
+- セッションと CSRF 対策は `/api/admin/*` だけにかける（`statefulApi()` は使わず、`EnsureFrontendRequestsAreStateful` を管理画面のルートのまとまりに付ける）。患者側の API は Cookie でログインしないため CSRF の対象外とし、合言葉の手続きは不要
+- `SANCTUM_STATEFUL_DOMAINS` に管理画面の場所（開発中は `localhost:3000,localhost:3001`）を設定する。ここに載っていない場所からのログインは 403
+- API：`POST /api/admin/login`（成功時にセッション ID を作り直す）、`POST /api/admin/logout`（セッションを破棄し、合言葉も作り直す。204）、`GET /api/admin/me`（`auth:sanctum`。ログインしていなければ 401）。院長の情報は名前とメールアドレスだけを返す
+- ログイン試行の制限（`App\Http\Requests\Admin\LoginRequest`）：同じメールアドレス＋IP で10分の間に5回失敗すると、その10分が終わるまで正しいパスワードでもログインできない（429）。成功したら回数を0に戻す。失敗のメッセージは「メールアドレスまたはパスワードが正しくありません。」の1種類
+- ログイン API には別に、同じ IP から1分あたり10回までの制限（`RateLimiter` の `admin-login`）
+- セッションの有効時間は Laravel の標準（操作がなければ120分）
+- 画面：`/admin/login`、`/admin`。`/admin` は `GET /api/admin/me` が 401 なら `/admin/login` へ移動する（データの守りは API 側）。管理画面は `noindex`
+- 画面側の CSRF：データを変える操作の前に `GET /sanctum/csrf-cookie` で合言葉（`XSRF-TOKEN` の Cookie）をもらい、`X-XSRF-TOKEN` の見出しに入れて送る（`frontend/src/lib/adminApi.ts`）。419 のときは合言葉をもらい直して1回だけやり直す
+- 画面の構成：患者側のページは `src/app/(patient)/`（共通の枠 `(patient)/layout.tsx`。URL は変わらない）、管理画面は `src/app/admin/`（共通の枠 `admin/layout.tsx`）。全体の枠 `src/app/layout.tsx` は `<html>` と `<body>` だけ
+- 401・419・429（ログインの制限を除く）・障害のときは、Laravel が返す英語の文章ではなく、画面側で用意した日本語の文章を表示する
+- パスワードを忘れたときの再設定は作らない。必要になったら、サーバー上で実行するコマンドをステップ11で検討する
 - 予約管理トークン：`random_bytes(32)` から生成し、DB には SHA-256 のハッシュ値だけを保存する。予約終了後は無効にし、`noindex`、`Referrer-Policy: no-referrer`、アクセス回数の制限をかける
 - 公開 API には回数制限（throttle）をかける
 - FormRequest でサーバー側の入力値チェック、`$fillable` で更新できる項目を限定、SQL は Eloquent とバインドのみで組み立てる

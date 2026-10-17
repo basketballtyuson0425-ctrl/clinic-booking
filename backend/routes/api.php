@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\ManageReservationController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 // このファイルの URL には、すべて先頭に /api が付く（例：/api/availability/dates）
 
@@ -27,3 +29,18 @@ Route::middleware('throttle:public-api')->group(function () {
             Route::post('/cancel', [ManageReservationController::class, 'cancel']);
         });
 });
+
+// 管理画面の API。院長は Cookie とセッションでログインするので、
+// 管理画面からのリクエストにだけセッションと CSRF 対策（合言葉の確認）を付ける
+Route::prefix('/admin')
+    ->middleware(EnsureFrontendRequestsAreStateful::class)
+    ->group(function () {
+        Route::post('/login', [AuthController::class, 'login'])
+            ->middleware('throttle:admin-login');
+
+        // ここから下は、ログインしていないと 401 になる
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/logout', [AuthController::class, 'logout']);
+            Route::get('/me', [AuthController::class, 'me']);
+        });
+    });

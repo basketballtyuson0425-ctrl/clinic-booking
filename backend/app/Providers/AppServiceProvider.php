@@ -36,5 +36,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('manage', function (Request $request) {
             return Limit::perMinute(30)->by($request->ip());
         });
+
+        // 院長のログイン API：同じ IP アドレスから1分あたり10回まで（メールアドレスを変えながら試す攻撃への対策）
+        RateLimiter::for('admin-login', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
     }
 }

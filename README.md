@@ -50,6 +50,7 @@ php artisan admin:create      # 院長のログイン用アカウントを作成
 | `CLINIC_NAME`・`CLINIC_PHONE` | メールに記載する接骨院の名前と電話番号 |
 | `FRONTEND_URL` | 患者側の画面の URL（メールに載せる予約管理ページのリンクに使います） |
 | `MAIL_MAILER` など `MAIL_*` | メールの送信方法。開発中は `log`（実際には送信しない） |
+| `SANCTUM_STATEFUL_DOMAINS` | 管理画面の場所（例：`localhost:3000`）。ここからのリクエストにだけ、ログインのセッションと CSRF 対策を付けます |
 
 本番環境でも、初回は次のコマンドで基本の営業時間を登録し、院長アカウントを作成してください。
 
@@ -92,6 +93,7 @@ npm run dev
 
 - ブラウザでは http://localhost:3000 を開きます（患者側の予約画面 `/reserve` が表示されます）
 - 予約管理ページは `/reservation/{予約完了時に発行される鍵}` です（予約完了画面と確認メールにリンクがあります）
+- 管理画面は http://localhost:3000/admin です。`php artisan admin:create` で作ったアカウントでログインします
 - Laravel が動いているかは http://localhost:8000/up で確認できます（ヘルスチェック用の URL）
 
 ## テスト・コードチェック

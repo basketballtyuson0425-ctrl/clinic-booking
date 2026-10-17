@@ -10,15 +10,13 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * すべてのページに共通の枠。ヘッダーや幅は、患者側（(patient)/layout.tsx）と管理画面（admin/layout.tsx）でそれぞれ決める
+ */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ja" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">
-        <header className="bg-brand text-white">
-          <div className="mx-auto max-w-md px-4 py-3 text-lg font-bold">{clinic.name}</div>
-        </header>
-        <main className="mx-auto w-full max-w-md flex-1 px-4 py-6">{children}</main>
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
