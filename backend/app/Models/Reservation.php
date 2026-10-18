@@ -39,6 +39,12 @@ class Reservation extends Model
     // 予約枠の長さ（分）
     public const SLOT_MINUTES = 30;
 
+    /**
+     * 「要連絡」（今の営業時間から外れている）か。DB には保存しない値で、管理画面の一覧で
+     * HoursImpact がまとめて判定した結果を入れておく（null なら、まだ判定していない）
+     */
+    public ?bool $needsContact = null;
+
     // 新しく作った予約は「予約中」から始まる
     protected $attributes = [
         'status' => 'reserved',

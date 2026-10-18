@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AvailabilityController as AdminAvailabilityController;
+use App\Http\Controllers\Admin\BusinessDayController;
+use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\MailLogController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\Admin\WeeklyScheduleController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\ManageReservationController;
 use App\Http\Controllers\ReservationController;
@@ -64,5 +67,18 @@ Route::prefix('/admin')
                 });
 
             Route::get('/mail-logs', [MailLogController::class, 'index']);
+
+            // 営業日カレンダーと営業時間の変更
+            Route::get('/calendar', [CalendarController::class, 'show']);
+            Route::prefix('/business-days/{date}')
+                ->where(['date' => '\d{4}-\d{2}-\d{2}'])
+                ->group(function () {
+                    Route::post('/impact', [BusinessDayController::class, 'impact']);
+                    Route::put('/', [BusinessDayController::class, 'update']);
+                    Route::delete('/', [BusinessDayController::class, 'destroy']);
+                });
+            Route::get('/weekly-schedules', [WeeklyScheduleController::class, 'index']);
+            Route::put('/weekly-schedules', [WeeklyScheduleController::class, 'update']);
+            Route::post('/weekly-schedules/impact', [WeeklyScheduleController::class, 'impact']);
         });
     });

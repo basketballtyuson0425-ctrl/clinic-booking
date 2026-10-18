@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\ListReservationsRequest;
 use App\Http\Requests\Admin\UpdateReservationRequest;
 use App\Http\Resources\Admin\ReservationResource;
 use App\Models\Reservation;
+use App\Services\HoursImpact;
 use App\Services\ReservationBooking;
 use App\Services\ReservationMailer;
 use Carbon\CarbonImmutable;
@@ -27,7 +28,7 @@ class ReservationController extends Controller
      * GET /api/admin/reservations
      * 日時の早い順に50件ずつ。何も指定しなければ今日以降の予約を返す
      */
-    public function index(ListReservationsRequest $request): AnonymousResourceCollection
+    public function index(ListReservationsRequest $request, HoursImpact $impact): AnonymousResourceCollection
     {
         $filters = $request->validated();
         $query = Reservation::query()->with('latestMailLog');
@@ -49,8 +50,17 @@ class ReservationController extends Controller
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
         }
+        if ($request->boolean('needs_contact')) {
+            $query->whereIn('id', $impact->needsContactIds());
+        }
 
         $reservations = $query->orderBy('start_at')->orderBy('id')->paginate(self::PER_PAGE);
+
+        // 要連絡かどうかを、このページの予約についてまとめて判定する（1件ずつ調べると、DB への問い合わせが増えるため）
+        $needsContactIds = $impact->needsContactIds($reservations->getCollection());
+        foreach ($reservations as $reservation) {
+            $reservation->needsContact = in_array($reservation->id, $needsContactIds, true);
+        }
 
         return ReservationResource::collection($reservations);
     }

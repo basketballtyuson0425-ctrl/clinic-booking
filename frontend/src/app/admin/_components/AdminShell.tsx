@@ -12,6 +12,7 @@ const MENU = [
   { href: "/admin", label: "ダッシュボード" },
   { href: "/admin/reservations", label: "予約一覧" },
   { href: "/admin/reservations/new", label: "新規登録" },
+  { href: "/admin/calendar", label: "営業日カレンダー" },
   { href: "/admin/mail-logs", label: "メール送信記録" },
 ] as const;
 

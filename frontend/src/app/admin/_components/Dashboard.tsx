@@ -12,6 +12,7 @@ import { useAdminError } from "./useAdminError";
 const MENU = [
   { href: "/admin/reservations", label: "予約一覧", description: "予約の確認・検索、日時の変更・キャンセル" },
   { href: "/admin/reservations/new", label: "新規登録", description: "お電話などで受けた予約を登録します" },
+  { href: "/admin/calendar", label: "営業日カレンダー", description: "日ごと・曜日ごとの営業時間の変更" },
   { href: "/admin/mail-logs", label: "メール送信記録", description: "患者さんに送ったメールと、送信の失敗" },
 ];
 
@@ -20,13 +21,17 @@ export default function Dashboard() {
   const toErrorMessage = useAdminError();
   const [today] = useState(todayString);
   const [reservations, setReservations] = useState<AdminReservation[] | null>(null);
+  const [needsContact, setNeedsContact] = useState<AdminReservation[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
-    fetchReservations({ date: today })
-      .then((result) => {
-        if (!ignore) setReservations(result.data);
+    // 本日の予約と、要連絡の予約（営業時間の変更で、営業時間外になった予約）を同時に読み込む
+    Promise.all([fetchReservations({ date: today }), fetchReservations({ needsContact: true })])
+      .then(([todays, contacts]) => {
+        if (ignore) return;
+        setReservations(todays.data);
+        setNeedsContact(contacts.data);
       })
       .catch((e: unknown) => {
         if (!ignore) setError(toErrorMessage(e));
@@ -40,6 +45,16 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {needsContact.length > 0 && (
+        <section className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-4">
+          <h2 className="text-lg font-bold text-amber-900">要連絡の予約（{needsContact.length} 件）</h2>
+          <p className="text-sm text-amber-900">
+            営業時間の変更で、営業時間外になった予約です。患者さんにお電話で連絡し、日時を変更するか、キャンセルしてください。
+          </p>
+          <ReservationTable reservations={needsContact} />
+        </section>
+      )}
+
       <section className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h1 className="text-xl font-bold">本日の予約（{formatDate(today)}）</h1>
@@ -56,7 +71,7 @@ export default function Dashboard() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold">メニュー</h2>
-        <ul className="grid gap-3 sm:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {MENU.map((item) => (
             <li key={item.href}>
               <Link href={item.href} className={`${panel} block h-full px-4 py-4 hover:border-brand hover:bg-brand-light`}>

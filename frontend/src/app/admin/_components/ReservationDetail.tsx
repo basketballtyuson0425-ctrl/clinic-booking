@@ -14,7 +14,15 @@ import {
 } from "@/lib/adminApi";
 import { ApiError } from "@/lib/api";
 import { isFuture } from "@/lib/date";
-import { formatRange, MAIL_TYPE_LABELS, MailResultBadge, slotEnd, StatusBadge, VISIT_TYPE_LABELS } from "./labels";
+import {
+  formatRange,
+  MAIL_TYPE_LABELS,
+  MailResultBadge,
+  NeedsContactBadge,
+  slotEnd,
+  StatusBadge,
+  VISIT_TYPE_LABELS,
+} from "./labels";
 import PatientFields, { patientFromReservation, toFieldErrors, type FieldErrors } from "./PatientFields";
 import SlotPicker from "./SlotPicker";
 import { adminDangerButton, adminPrimaryButton, adminSecondaryButton, panel } from "./styles";
@@ -227,7 +235,14 @@ export default function ReservationDetail({ id }: { id: string }) {
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-bold">{currentLabel}</h1>
         <StatusBadge reservation={reservation} />
+        {reservation.needs_contact && <NeedsContactBadge />}
       </div>
+
+      {reservation.needs_contact && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+          営業時間の変更で、この予約は営業時間外になりました。患者さんにお電話で連絡し、日時を変更するか、キャンセルしてください。
+        </p>
+      )}
 
       {doneMessage && (
         <p className={successBox} role="status">

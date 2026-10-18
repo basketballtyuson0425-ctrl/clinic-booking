@@ -23,6 +23,7 @@ export default async function ReservationsPage({ searchParams }: PageProps<"/adm
     phone: first(query.phone),
     status: status === "reserved" || status === "cancelled" ? status : "",
     includePast: first(query.include_past) === "1",
+    needsContact: first(query.needs_contact) === "1",
     page: Number.isInteger(page) && page > 1 ? page : 1,
   };
 

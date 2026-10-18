@@ -170,6 +170,7 @@ GET  /api/admin/calendar?month=YYYY-MM
 POST /api/admin/business-days/{date}/impact
 PUT/DELETE /api/admin/business-days/{date}
 GET/PUT    /api/admin/weekly-schedules
+POST /api/admin/weekly-schedules/impact
 ```
 
 ## 6. 画面
@@ -229,6 +230,41 @@ API（すべて `/api/admin` の `auth:sanctum` の内側。応答に `Cache-Con
 - `/admin/mail-logs`：メール送信記録。送信失敗だけに絞り込める
 - 日時の選び方：日付を選ぶと、30分枠が「○ 空き／× 予約済み」付きで並ぶ（`GET /api/admin/availability/{date}`）
 - API が 401 を返したら（ログインの期限切れなど）、ログイン画面へ移動する
+
+### 営業日カレンダーの詳細（ステップ9で決定：2026-10-18）
+画面 `/admin/calendar`（メニュー「営業日カレンダー」）
+- 月ごとのカレンダーに、各日の営業時間（休診日は「休診」）・祝日名・予約の件数・「要連絡」の件数を表示する
+- 日付を押すと、カレンダーの下にその日の詳細を開く（普段は見るだけ）。「編集」を押すと、休診にする・前半枠・後半枠を編集できる。ボタンは「保存」「キャンセル」「通常設定に戻す」（個別設定がある日だけ）
+- 同じ画面の下に「基本の営業時間（曜日ごと）」の欄を置き、曜日ごとの営業時間と、休診にする第N週（水曜の第1・第3など）を変更できる
+
+営業時間の入力ルール
+- 時刻は30分単位（`HH:00` か `HH:30`）。前半・後半はそれぞれ「開始と終了の両方」か「どちらも空（その枠は休み）」。開始 ＜ 終了。前後半の両方があるときは、前半の終了 ≦ 後半の開始
+- 休診にしない日は、前半か後半の少なくとも一方が必要
+- 過去の日付は変更できない（422）。今日は変更できる
+
+影響の確認（要件25）
+- 「予約」は、その日の予約中で、開始時刻が今より後のもの。「影響のある予約」は、そのうち新しい営業時間の30分枠に入らないもの
+- 日付ごとの変更：その日に予約が1件でもあれば、保存の前に確認を挟む（「この日には既に◯件の予約があります。…変更しますか？」）。影響のある予約は名前つきで表示する
+- 曜日ごとの基本設定の変更：これから先の予約のうち、影響のある予約が1件でもあれば確認を挟む
+- 画面の確認だけに頼らないよう、確認が必要なのに `confirmed: true` が付いていない保存は、サーバーが 409（`reason: confirmation_required` と影響の内容）で断る
+- 予約の自動キャンセル・自動変更はしない
+
+お知らせメール（`ReservationHoursChanged`、`mail_logs.type = hours_changed`）
+- 影響のある予約で、メールアドレスがある患者だけに送る。画面に「お知らせメールを送る」のチェック（最初はオン）
+- 件名「【接骨院名】営業時間変更のお知らせ」。本文に、変更後のその日の営業時間・予約日時と、お電話でご連絡いただきたい旨を書く
+
+「要連絡」
+- 予約中・開始時刻が今より後・今の営業時間の30分枠に入らない予約。DB には持たず、その場で判定する（`App\Services\HoursImpact`）。予約の日時を変えるか、キャンセルすると消える
+- カレンダー・予約一覧（`needs_contact=1` で絞り込み）・予約の詳細・ダッシュボードに表示する
+
+API（すべて `/api/admin` の `auth:sanctum` の内側）
+- `GET /api/admin/calendar?month=YYYY-MM`：各日の `date`・`is_closed`・`am`・`pm`（`{start, end}` か null）・`source`（`override` / `holiday` / `weekly`）・`holiday_name`・`has_override`・`reservation_count`（予約中の件数）・`needs_contact_count`
+- `POST /api/admin/business-days/{date}/impact`：保存したときの影響（保存はしない）。本文は PUT と同じ。`{ "reset": true }` なら「通常設定に戻す」場合の影響
+- `PUT /api/admin/business-days/{date}`：個別設定を保存する（`is_closed`・`am_start`・`am_end`・`pm_start`・`pm_end`・`confirmed`・`send_mail`）
+- `DELETE /api/admin/business-days/{date}`：個別設定を消して、通常の設定に戻す（`confirmed`・`send_mail`）
+- `GET /api/admin/weekly-schedules`、`PUT /api/admin/weekly-schedules`（7曜日分＋`confirmed`・`send_mail`）、`POST /api/admin/weekly-schedules/impact`（保存したときの影響）
+- 影響の内容：`reservation_count`・`affected`（予約の ID・日時・氏名・電話番号・メールアドレスの有無）・変更後の営業時間
+- 祝日名は Yasumi の日本語名（`ja_JP`）
 
 ## 7. メール
 - Laravel の Mailable を使い、予約データのコミット後にその場で送信する（キューは使わない）。送信結果は mail_logs に記録し、失敗しても予約は成立させる

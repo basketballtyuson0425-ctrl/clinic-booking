@@ -7,7 +7,7 @@ use App\Models\WeeklySchedule;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Carbon\CarbonPeriod;
-use Yasumi\Provider\AbstractProvider;
+use Yasumi\Holiday;
 use Yasumi\Yasumi;
 
 /**
@@ -17,7 +17,7 @@ use Yasumi\Yasumi;
  */
 class BusinessHours
 {
-    /** @var array<int, AbstractProvider> 年ごとの祝日一覧（同じ年を何度も計算しないよう覚えておく） */
+    /** @var array<int, array<string, string>> 年ごとの「日付 → 祝日名」の一覧 */
     private array $holidaysByYear = [];
 
     public function forDate(CarbonInterface $date): DaySchedule
@@ -43,7 +43,7 @@ class BusinessHours
         $result = [];
         foreach (CarbonPeriod::create($from, $to) as $day) {
             $date = $day->toDateString();
-            $result[$date] = $this->resolve(
+            $result[$date] = $this->resolveDay(
                 CarbonImmutable::parse($date),
                 $overrides->get($date),
                 $weeklySchedules->get($day->dayOfWeek),
@@ -53,20 +53,25 @@ class BusinessHours
         return $result;
     }
 
-    private function resolve(CarbonImmutable $day, ?BusinessDayOverride $override, ?WeeklySchedule $weekly): DaySchedule
+    /**
+     * 1日の営業時間を決める。保存前の設定（新しい個別設定・新しい曜日の設定）を渡せば、
+     * 「その設定にしたら営業時間がどうなるか」も同じ手順で計算できる（営業時間の変更の影響を調べるときに使う）
+     */
+    public function resolveDay(CarbonImmutable $day, ?BusinessDayOverride $override, ?WeeklySchedule $weekly): DaySchedule
     {
         $date = $day->toDateString();
+        $holidayName = $this->holidayName($day);
 
         // ① 日付ごとの個別設定があれば、祝日や曜日に関係なくそれに従う
         if ($override !== null) {
             return $override->is_closed
-                ? DaySchedule::closed($date)
-                : new DaySchedule($date, self::period($override->am_start, $override->am_end), self::period($override->pm_start, $override->pm_end));
+                ? DaySchedule::closed($date, DaySchedule::SOURCE_OVERRIDE, $holidayName)
+                : new DaySchedule($date, self::period($override->am_start, $override->am_end), self::period($override->pm_start, $override->pm_end), DaySchedule::SOURCE_OVERRIDE, $holidayName);
         }
 
         // ② 祝日は休診
-        if ($this->isHoliday($day)) {
-            return DaySchedule::closed($date);
+        if ($holidayName !== null) {
+            return DaySchedule::closed($date, DaySchedule::SOURCE_HOLIDAY, $holidayName);
         }
 
         // ③ 曜日ごとの基本設定。設定が見つからない曜日は、誤って予約を受けないよう休診にする
@@ -83,11 +88,17 @@ class BusinessHours
         return new DaySchedule($date, self::period($weekly->am_start, $weekly->am_end), self::period($weekly->pm_start, $weekly->pm_end));
     }
 
-    private function isHoliday(CarbonImmutable $day): bool
+    /**
+     * 祝日なら、その日本語の名前（例：文化の日、振替休日）。祝日でなければ null
+     */
+    private function holidayName(CarbonImmutable $day): ?string
     {
-        $this->holidaysByYear[$day->year] ??= Yasumi::create('Japan', $day->year);
+        // 同じ年を何度も計算しないよう、年ごとに「日付 → 祝日名」の一覧を覚えておく
+        $this->holidaysByYear[$day->year] ??= collect(Yasumi::create('Japan', $day->year, 'ja_JP')->getHolidays())
+            ->mapWithKeys(fn (Holiday $holiday) => [$holiday->format('Y-m-d') => $holiday->getName()])
+            ->all();
 
-        return $this->holidaysByYear[$day->year]->isHoliday($day);
+        return $this->holidaysByYear[$day->year][$day->toDateString()] ?? null;
     }
 
     /**

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { AdminReservation } from "@/lib/adminApi";
-import { formatRange, MAIL_TYPE_LABELS, MailResultBadge, StatusBadge, VISIT_TYPE_LABELS } from "./labels";
+import { formatRange, MAIL_TYPE_LABELS, MailResultBadge, NeedsContactBadge, StatusBadge, VISIT_TYPE_LABELS } from "./labels";
 import { panel } from "./styles";
 
 /**
@@ -35,8 +35,13 @@ export default function ReservationTable({ reservations }: { reservations: Admin
                     {formatRange(reservation.start_at, reservation.end_at)}
                   </Link>
                 </td>
-                <td className="px-3 py-2">
+                <td className="space-y-1 px-3 py-2">
                   <StatusBadge reservation={reservation} />
+                  {reservation.needs_contact && (
+                    <div>
+                      <NeedsContactBadge />
+                    </div>
+                  )}
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">{reservation.patient_name}</td>
                 <td className="px-3 py-2">{VISIT_TYPE_LABELS[reservation.visit_type]}</td>
@@ -68,7 +73,10 @@ export default function ReservationTable({ reservations }: { reservations: Admin
                 <span className="font-bold whitespace-nowrap text-brand">
                   {formatRange(reservation.start_at, reservation.end_at)}
                 </span>
-                <StatusBadge reservation={reservation} />
+                <span className="flex gap-1">
+                  {reservation.needs_contact && <NeedsContactBadge />}
+                  <StatusBadge reservation={reservation} />
+                </span>
               </div>
               <p className="text-base font-bold text-gray-900">
                 {reservation.patient_name}

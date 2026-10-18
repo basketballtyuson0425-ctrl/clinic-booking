@@ -9,8 +9,14 @@ return [
     'confirmed' => ':attributeが確認用と一致しません。',
     'date_format' => ':attributeの形式が正しくありません。',
     'email' => ':attributeの形式が正しくありません。',
+    'array' => ':attributeの形式が正しくありません。',
+    'between' => [
+        'numeric' => ':attributeは:minから:maxの間で指定してください。',
+    ],
+    'distinct' => ':attributeが重複しています。',
     'enum' => ':attributeの選択が正しくありません。',
     'integer' => ':attributeは整数で指定してください。',
+    'present' => ':attributeを指定してください。',
     'max' => [
         'string' => ':attributeは:max文字以内で入力してください。',
     ],
@@ -20,6 +26,9 @@ return [
     ],
     'regex' => ':attributeの形式が正しくありません。',
     'required' => ':attributeを入力してください。',
+    'size' => [
+        'array' => ':attributeは:size件で指定してください。',
+    ],
     'string' => ':attributeは文字で入力してください。',
 
     // 項目ごとに文言を変えたいもの
@@ -57,5 +66,23 @@ return [
         'include_past' => '過去の予約の表示',
         'failed_only' => '送信失敗の絞り込み',
         'page' => 'ページ',
+        'needs_contact' => '要連絡の絞り込み',
+        'month' => '月',
+        // 営業時間
+        'is_closed' => '休診の指定',
+        'am_start' => '前半の開始',
+        'am_end' => '前半の終了',
+        'pm_start' => '後半の開始',
+        'pm_end' => '後半の終了',
+        'confirmed' => '確認の指定',
+        'schedules' => '曜日ごとの設定',
+        'schedules.*.day_of_week' => '曜日',
+        'schedules.*.is_closed' => '休診の指定',
+        'schedules.*.am_start' => '前半の開始',
+        'schedules.*.am_end' => '前半の終了',
+        'schedules.*.pm_start' => '後半の開始',
+        'schedules.*.pm_end' => '後半の終了',
+        'schedules.*.closed_weeks' => '休診にする週',
+        'schedules.*.closed_weeks.*' => '休診にする週',
     ],
 ];

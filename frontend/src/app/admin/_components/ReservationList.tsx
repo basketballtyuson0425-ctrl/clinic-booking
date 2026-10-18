@@ -119,6 +119,15 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
             />
             過去の予約も表示（日付を指定したときは、その日の予約を表示します）
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={draft.needsContact}
+              onChange={(e) => setDraft({ ...draft, needsContact: e.target.checked })}
+              className="h-4 w-4 accent-brand"
+            />
+            要連絡の予約だけ
+          </label>
           <div className="ml-auto flex gap-2">
             <button type="button" className={adminSecondaryButton} onClick={() => router.push("/admin/reservations")}>
               条件をクリア

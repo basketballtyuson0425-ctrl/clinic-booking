@@ -40,6 +40,7 @@ export type AdminReservation = {
   cancelled_at: string | null;
   cancelled_by: "patient" | "admin" | null;
   has_manage_url: boolean; // 予約管理 URL を発行済みか
+  needs_contact: boolean; // 要連絡（営業時間の変更で、今の営業時間から外れた予約）
   created_at: string;
   last_mail: MailLogEntry | null; // 最後に送ったメール
   mail_logs?: MailLogEntry[]; // 詳細のときだけ付く（新しい順）
@@ -64,6 +65,7 @@ export type ReservationFilters = {
   phone: string;
   status: ReservationStatus | "";
   includePast: boolean;
+  needsContact: boolean; // 要連絡の予約だけ
   page: number;
 };
 
@@ -160,6 +162,7 @@ export function reservationFiltersToQuery(filters: Partial<ReservationFilters>):
   if (filters.phone) params.set("phone", filters.phone);
   if (filters.status) params.set("status", filters.status);
   if (filters.includePast) params.set("include_past", "1");
+  if (filters.needsContact) params.set("needs_contact", "1");
   if (filters.page && filters.page > 1) params.set("page", String(filters.page));
   return params.toString();
 }
@@ -207,4 +210,101 @@ export function fetchMailLogs(failedOnly: boolean, page: number): Promise<Pagina
 
 export function fetchAdminDaySlots(date: string): Promise<AdminDaySlots> {
   return adminRequest(`/api/admin/availability/${date}`);
+}
+
+// ---- 営業日カレンダー・営業時間 ----
+
+/** 営業時間の1枠（例：{ start: "09:00", end: "13:00" }） */
+export type Period = { start: string; end: string };
+
+/** カレンダーの1日分（GET /api/admin/calendar） */
+export type CalendarDay = {
+  date: string;
+  is_closed: boolean;
+  am: Period | null; // 休みの枠は null
+  pm: Period | null;
+  source: "override" | "holiday" | "weekly"; // 日付ごとの個別設定／祝日／曜日ごとの基本設定
+  holiday_name: string | null; // 例："文化の日"
+  has_override: boolean;
+  reservation_count: number; // 予約中の件数
+  needs_contact_count: number; // 要連絡の件数
+};
+
+/** 営業時間の入力（時刻は "09:00"。休みの枠は null） */
+export type HoursInput = {
+  is_closed: boolean;
+  am_start: string | null;
+  am_end: string | null;
+  pm_start: string | null;
+  pm_end: string | null;
+};
+
+/** 営業時間の変更で影響を受ける予約 */
+export type AffectedReservation = {
+  id: number;
+  start_at: string;
+  end_at: string;
+  patient_name: string;
+  patient_phone: string;
+  has_email: boolean;
+};
+
+/** 営業時間を変えたときの影響（保存の前の確認に使う） */
+export type HoursImpact = {
+  reservation_count: number; // 日付ごと：その日の予約の件数／曜日ごと：外れる予約の件数
+  affected: AffectedReservation[]; // 新しい営業時間から外れる予約
+  schedule?: { is_closed: boolean; am: Period | null; pm: Period | null }; // 日付ごと：変更後のその日の営業時間
+};
+
+/** 保存したあとの返事のうち、お知らせメールの結果 */
+export type MailResult = { sent: number; failed: number };
+
+/** 曜日ごとの基本設定（0＝日曜〜6＝土曜） */
+export type WeeklySchedule = HoursInput & {
+  day_of_week: number;
+  closed_weeks: number[]; // 休診にする「第N週」（例：[1, 3]）
+};
+
+export async function fetchCalendar(month: string): Promise<CalendarDay[]> {
+  const body = await adminRequest<{ days: CalendarDay[] }>(`/api/admin/calendar?month=${month}`);
+  return body.days;
+}
+
+/** その日の営業時間を変えたら、予約にどう影響するか（保存はしない）。reset なら「通常設定に戻す」場合 */
+export function checkDayImpact(date: string, input: HoursInput | { reset: true }): Promise<HoursImpact> {
+  return adminRequest(`/api/admin/business-days/${date}/impact`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function saveBusinessDay(
+  date: string,
+  input: HoursInput & { confirmed: boolean; send_mail: boolean },
+): Promise<{ day: CalendarDay; affected: AffectedReservation[]; mail: MailResult }> {
+  return adminRequest(`/api/admin/business-days/${date}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+/** 日付ごとの個別設定を消して、通常の設定に戻す */
+export function resetBusinessDay(
+  date: string,
+  options: { confirmed: boolean; send_mail: boolean },
+): Promise<{ day: CalendarDay; affected: AffectedReservation[]; mail: MailResult }> {
+  return adminRequest(`/api/admin/business-days/${date}`, { method: "DELETE", body: JSON.stringify(options) });
+}
+
+export async function fetchWeeklySchedules(): Promise<WeeklySchedule[]> {
+  const body = await adminRequest<{ schedules: WeeklySchedule[] }>("/api/admin/weekly-schedules");
+  return body.schedules;
+}
+
+export function checkWeeklyImpact(schedules: WeeklySchedule[]): Promise<HoursImpact> {
+  return adminRequest("/api/admin/weekly-schedules/impact", { method: "POST", body: JSON.stringify({ schedules }) });
+}
+
+export function saveWeeklySchedules(
+  schedules: WeeklySchedule[],
+  options: { confirmed: boolean; send_mail: boolean },
+): Promise<{ schedules: WeeklySchedule[]; affected: AffectedReservation[]; mail: MailResult }> {
+  return adminRequest("/api/admin/weekly-schedules", {
+    method: "PUT",
+    body: JSON.stringify({ schedules, ...options }),
+  });
 }

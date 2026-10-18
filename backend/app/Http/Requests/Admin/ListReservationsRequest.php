@@ -37,6 +37,7 @@ class ListReservationsRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9-]+$/'],
             'status' => ['nullable', Rule::enum(ReservationStatus::class)],
             'include_past' => ['nullable', 'boolean'],
+            'needs_contact' => ['nullable', 'boolean'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
     }

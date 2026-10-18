@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Admin;
 
 use App\Models\Reservation;
+use App\Services\HoursImpact;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -33,6 +34,9 @@ class ReservationResource extends JsonResource
             'cancelled_by' => $this->cancelled_by?->value,
             // 予約管理 URL を発行済みか（再送すると、以前の URL が使えなくなることを画面で伝えるため）
             'has_manage_url' => $this->manage_token_hash !== null,
+            // 要連絡（営業時間の変更で、今の営業時間から外れた予約）。一覧では、まとめて判定した結果を使う
+            'needs_contact' => $this->resource->needsContact
+                ?? in_array($this->id, app(HoursImpact::class)->needsContactIds(collect([$this->resource])), true),
             'created_at' => $this->created_at->format('Y-m-d H:i'),
             'last_mail' => $this->whenLoaded('latestMailLog', fn () => new MailLogResource($this->latestMailLog)),
             'mail_logs' => MailLogResource::collection($this->whenLoaded('mailLogs')),

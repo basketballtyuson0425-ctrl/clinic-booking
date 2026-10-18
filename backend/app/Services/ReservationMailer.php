@@ -6,6 +6,7 @@ use App\Enums\MailStatus;
 use App\Enums\MailType;
 use App\Mail\ReservationCancelled;
 use App\Mail\ReservationChanged;
+use App\Mail\ReservationHoursChanged;
 use App\Mail\ReservationReceived;
 use App\Models\MailLog;
 use App\Models\Reservation;
@@ -79,6 +80,44 @@ class ReservationMailer
         }
 
         return $this->send($reservation, MailType::Cancelled, new ReservationCancelled($reservation));
+    }
+
+    /**
+     * 営業時間変更のお知らせを送る（予約の時刻が、変更後の営業時間から外れた患者さんへ）。メールアドレスがなければ何もしない
+     *
+     * @param  DaySchedule  $schedule  予約日の、変更後の営業時間
+     */
+    public function sendHoursChanged(Reservation $reservation, DaySchedule $schedule): bool
+    {
+        if ($reservation->patient_email === null) {
+            return false;
+        }
+
+        return $this->send($reservation, MailType::HoursChanged, new ReservationHoursChanged($reservation, $schedule));
+    }
+
+    /**
+     * 営業時間の変更で影響を受けた予約に、まとめてお知らせを送る
+     *
+     * @param  iterable<array{reservation: Reservation, schedule: DaySchedule}>  $targets
+     * @return array{sent: int, failed: int} 送れた件数と、送信に失敗した件数（メールアドレスがない予約は数えない）
+     */
+    public function sendHoursChangedToAll(iterable $targets): array
+    {
+        $result = ['sent' => 0, 'failed' => 0];
+
+        foreach ($targets as $target) {
+            if ($target['reservation']->patient_email === null) {
+                continue;
+            }
+            if ($this->sendHoursChanged($target['reservation'], $target['schedule'])) {
+                $result['sent']++;
+            } else {
+                $result['failed']++;
+            }
+        }
+
+        return $result;
     }
 
     /**

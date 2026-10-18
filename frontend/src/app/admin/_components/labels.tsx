@@ -44,6 +44,13 @@ export function StatusBadge({ reservation }: { reservation: AdminReservation }) 
   return <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold whitespace-nowrap ${className}`}>{label}</span>;
 }
 
+/** 要連絡（営業時間の変更で、今の営業時間から外れた予約）。院長が電話で連絡し、日時を変えるかキャンセルする */
+export function NeedsContactBadge() {
+  return (
+    <span className="inline-block rounded bg-amber-500 px-2 py-0.5 text-xs font-bold whitespace-nowrap text-white">要連絡</span>
+  );
+}
+
 /** メールの送信結果。失敗は赤で目立たせる */
 export function MailResultBadge({ log }: { log: MailLogEntry }) {
   return log.status === "failed" ? (

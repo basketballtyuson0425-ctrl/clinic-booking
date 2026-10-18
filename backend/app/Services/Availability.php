@@ -126,10 +126,7 @@ class Availability
      */
     private function isSlotStart(CarbonInterface $startAt): bool
     {
-        $times = $this->businessHours->forDate($startAt)->slotTimes();
-        $allTimes = [...($times['am'] ?? []), ...($times['pm'] ?? [])];
-
-        return in_array($startAt->format('H:i'), $allTimes, true) && $startAt->second === 0;
+        return $this->businessHours->forDate($startAt)->hasSlot($startAt->format('H:i')) && $startAt->second === 0;
     }
 
     /**
