@@ -23,4 +23,16 @@ export function formatDateTime(startAt: string): string {
   return `${formatDate(date)} ${formatTime(time)}`;
 }
 
+/** 今日の日付 "2026-10-20"（ブラウザの時刻で決める） */
+export function todayString(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/** "2026-10-20 09:00" が今より後か（ブラウザの時刻で判定する。画面の案内用で、最終的な判定はサーバーが行う） */
+export function isFuture(startAt: string): boolean {
+  return new Date(startAt.replace(" ", "T")).getTime() > Date.now();
+}
+
 export const WEEKDAY_LABELS = WEEKDAYS;

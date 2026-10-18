@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\AvailabilityController as AdminAvailabilityController;
+use App\Http\Controllers\Admin\MailLogController;
+use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\ManageReservationController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Middleware\PreventCaching;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
@@ -38,9 +42,27 @@ Route::prefix('/admin')
         Route::post('/login', [AuthController::class, 'login'])
             ->middleware('throttle:admin-login');
 
-        // ここから下は、ログインしていないと 401 になる
-        Route::middleware('auth:sanctum')->group(function () {
+        // ここから下は、ログインしていないと 401 になる。
+        // 患者の個人情報を返すので、ブラウザや途中のサーバーに応答を保存させない（Cache-Control: no-store, private）
+        Route::middleware([PreventCaching::class, 'auth:sanctum'])->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
+
+            Route::get('/availability/{date}', [AdminAvailabilityController::class, 'show'])
+                ->where('date', '\d{4}-\d{2}-\d{2}');
+
+            Route::get('/reservations', [AdminReservationController::class, 'index']);
+            Route::post('/reservations', [AdminReservationController::class, 'store']);
+            // {reservation} は予約の ID（数字だけ）。Laravel が自動で予約を探し、なければ 404 にする
+            Route::prefix('/reservations/{reservation}')
+                ->whereNumber('reservation')
+                ->group(function () {
+                    Route::get('/', [AdminReservationController::class, 'show']);
+                    Route::patch('/', [AdminReservationController::class, 'update']);
+                    Route::post('/cancel', [AdminReservationController::class, 'cancel']);
+                    Route::post('/resend-mail', [AdminReservationController::class, 'resendMail']);
+                });
+
+            Route::get('/mail-logs', [MailLogController::class, 'index']);
         });
     });

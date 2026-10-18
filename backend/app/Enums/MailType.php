@@ -9,4 +9,5 @@ enum MailType: string
     case Changed = 'changed';
     case Cancelled = 'cancelled';
     case HoursChanged = 'hours_changed';
+    case Resent = 'resent'; // 院長による「予約内容のお知らせ」の再送
 }

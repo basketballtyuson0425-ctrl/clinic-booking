@@ -17,17 +17,18 @@ class ReservationChanged extends Mailable
     use Queueable, SerializesModels;
 
     /**
-     * @param  string  $manageUrl  予約管理ページの URL（鍵入り）
+     * @param  string|null  $manageUrl  予約管理ページの URL（鍵入り）。院長が変更したときは null。
+     *                                  DB には鍵のハッシュ値しかなく、元の URL を作れないため
      */
     public function __construct(
         public Reservation $reservation,
-        public string $manageUrl,
+        public ?string $manageUrl,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '【'.config('clinic.name').'】ご予約の変更を承りました',
+            subject: '【'.config('clinic.name').'】'.($this->manageUrl === null ? 'ご予約日時の変更のお知らせ' : 'ご予約の変更を承りました'),
         );
     }
 

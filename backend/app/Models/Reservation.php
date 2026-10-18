@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * 予約（reservations テーブル）
@@ -211,5 +212,13 @@ class Reservation extends Model
     public function mailLogs(): HasMany
     {
         return $this->hasMany(MailLog::class);
+    }
+
+    /**
+     * 最後に送ったメール（管理画面の一覧で、送信に失敗していないかを表示するため）
+     */
+    public function latestMailLog(): HasOne
+    {
+        return $this->hasOne(MailLog::class)->latestOfMany();
     }
 }

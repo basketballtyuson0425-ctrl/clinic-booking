@@ -29,6 +29,14 @@ class ReservationConflictException extends Exception
         return new self('同じ日にすでにご予約があります。ご予約の変更は、予約管理ページまたはお電話でお願いします。', 'same_day');
     }
 
+    /**
+     * 院長の操作のとき（患者向けの「予約管理ページまたはお電話で」の案内を含めない）
+     */
+    public static function sameDayForAdmin(): self
+    {
+        return new self('同じ日に、同じ方（氏名と電話番号が同じ）の予約がすでにあります。', 'same_day');
+    }
+
     public function render(): JsonResponse
     {
         return response()->json(['message' => $this->getMessage(), 'reason' => $this->reason], 409);

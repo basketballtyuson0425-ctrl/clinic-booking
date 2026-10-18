@@ -1,6 +1,13 @@
 {!! $reservation->patient_name !!} 様
 
+@if ($resent)
+{!! config('clinic.name') !!}です。ご予約内容をお送りします。
+以前のメールでお知らせした予約管理ページの URL は使えなくなりました。今後は、このメールの URL をご利用ください。
+@elseif ($fromWeb)
 {!! config('clinic.name') !!}です。ネット予約を承りました。
+@else
+{!! config('clinic.name') !!}です。ご予約を承りました。
+@endif
 
 ■ ご予約内容
 ご予約日時　：{!! $reservation->dateTimeLabel() !!}

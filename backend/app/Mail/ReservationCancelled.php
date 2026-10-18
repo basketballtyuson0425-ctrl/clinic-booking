@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Enums\CancelledBy;
 use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -10,7 +11,8 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * 予約キャンセルのお知らせ（テキストのみ）
+ * 予約キャンセルのお知らせ（テキストのみ）。
+ * 患者がキャンセルしたときは「承りました」、院長がキャンセルしたときは「キャンセルいたしました」にする
  */
 class ReservationCancelled extends Mailable
 {
@@ -21,7 +23,7 @@ class ReservationCancelled extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '【'.config('clinic.name').'】ご予約のキャンセルを承りました',
+            subject: '【'.config('clinic.name').'】'.($this->byAdmin() ? 'ご予約をキャンセルいたしました' : 'ご予約のキャンセルを承りました'),
         );
     }
 
@@ -29,7 +31,15 @@ class ReservationCancelled extends Mailable
     {
         return new Content(
             text: 'mail.reservation-cancelled',
-            with: ['reserveUrl' => config('clinic.frontend_url').'/reserve'],
+            with: [
+                'byAdmin' => $this->byAdmin(),
+                'reserveUrl' => config('clinic.frontend_url').'/reserve',
+            ],
         );
+    }
+
+    private function byAdmin(): bool
+    {
+        return $this->reservation->cancelled_by === CancelledBy::Admin;
     }
 }

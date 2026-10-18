@@ -165,6 +165,7 @@ GET/PATCH  /api/admin/reservations/{id}
 POST /api/admin/reservations/{id}/cancel
 POST /api/admin/reservations/{id}/resend-mail
 GET  /api/admin/mail-logs
+GET  /api/admin/availability/{date}
 GET  /api/admin/calendar?month=YYYY-MM
 POST /api/admin/business-days/{date}/impact
 PUT/DELETE /api/admin/business-days/{date}
@@ -193,6 +194,41 @@ GET/PUT    /api/admin/weekly-schedules
 - `/admin/reservations`（一覧）、`/admin/reservations/new`、`/admin/reservations/[id]`
 - `/admin/calendar`
 - `/admin/mail-logs`
+
+### 管理画面：予約の操作の詳細（ステップ8で決定：2026-10-18）
+院長のルール（確定仕様 6 の詳細）
+- 営業時間内の30分枠であること、二重予約・同日重複予約をしないことは、患者と同じ。`ReservationBooking` の `createForAdmin`・`changeForAdmin`・`cancelForAdmin` で、患者と同じ重複チェックと DB の一意制約を使う
+- 「30日以内」と「1時間前まで」の制限はかけない。ただし、過去の日時（開始時刻が今より前）への登録・変更はできない（422）
+- 院長は患者情報（氏名・電話番号・メールアドレス・初回／再来）と施術希望内容も変更できる。メールアドレスの確認欄は使わない（間違えたら修正して再送する）
+- キャンセル済みの予約は変更・キャンセル・再送できない。予約時刻を過ぎた予約は、日時の変更・キャンセル・再送はできない（患者情報の修正はできる）。どちらも 403 と `reason`（`cancelled` / `past`）。再送でメールアドレスがない場合は 403 の `no_email`
+- 同じ人の同じ日の予約とぶつかったときの 409 の文章は、院長向けのもの（「予約管理ページまたはお電話で」の案内を含めない）
+
+API（すべて `/api/admin` の `auth:sanctum` の内側。応答に `Cache-Control: no-store, private` を付ける（`App\Http\Middleware\PreventCaching`。Laravel 標準の `cache.headers` は GET の応答にしか付かないため）。院長の画面なので個人情報は伏せずに返す）
+- `GET /api/admin/reservations`：日時の早い順（同じ日時は ID 順）に50件ずつ。絞り込みは `date`（その日だけ）・`name`（氏名の一部。`name_key` を検索）・`phone`（電話番号の一部。`phone_key` を検索）・`status`（`reserved` / `cancelled`）・`include_past`（`1` で過去も表示）。何も指定しなければ今日以降。`date` を指定したときは、過去の日付でもその日を表示する
+- 氏名・電話番号の検索語は、保存時と同じ方法で表記ゆれをそろえてから部分一致で探す。`%` と `_` はただの文字として扱う（`LIKE ... ESCAPE '!'`。SQLite と MySQL の両方で使える書き方）
+- 予約の項目：`id`・`start_at`・`end_at`・`status`・`is_past`（終了時刻を過ぎたか）・患者情報・`visit_type`・`treatment_request`・`source`・`cancelled_at`・`cancelled_by`・`has_manage_url`（予約管理 URL を発行済みか）・`created_at`・`last_mail`（最後に送ったメールの種類・結果・日時）。詳細ではその予約の `mail_logs` も返す
+- `POST /api/admin/reservations`：入力は患者と同じ項目＋`send_mail`（必須・true/false）。メールアドレスがあり `send_mail` が true のときだけ、予約管理 URL の鍵を発行して予約完了メールを送る。それ以外は `manage_token_hash` を NULL のままにする。201 で `{ data, mail_sent }`
+- `PATCH /api/admin/reservations/{id}`：送られた項目だけを変える（`start_at`・患者情報・`treatment_request`）。`send_mail` が true で日時が変わったときだけ、変更のお知らせを送る（患者情報・施術希望内容だけの変更では送らない）。`{ data, changed, mail_sent }`
+- `POST /api/admin/reservations/{id}/cancel`：`send_mail`（必須）。`cancelled_by = admin` にする
+- `POST /api/admin/reservations/{id}/resend-mail`：鍵を作り直して「予約内容のお知らせ」を送る。送信できたときだけ新しい鍵を保存する（古い URL は 404 になる）。送信に失敗したときは鍵を変えない（古い URL が使えるまま）
+- `GET /api/admin/mail-logs`：新しい順に50件ずつ。`failed_only=1` で送信失敗だけ。予約の ID・日時・氏名を付ける
+- `GET /api/admin/availability/{date}`：その日の30分枠を `am`・`pm` に分けて返す。枠ごとに `reserved`（予約中の予約があるか）と `available`（予約がなく、開始時刻が今より後か）。30日以内の制限はない。存在しない日付・過去の日付は 422
+- 存在しない予約 ID は 404「予約が見つかりません。」
+
+メール（院長の操作）
+- 院長が登録した予約の完了メールは「ご予約を承りました」（「ネット予約を」と書かない）
+- 院長が変更したときのお知らせ（`ReservationChanged` の `manageUrl` が null）には予約管理 URL を載せず、「以前お送りしたメールの URL からご確認いただけます」と書く。DB に鍵のハッシュ値しかなく、元の URL を作れないため
+- 院長がキャンセルしたときは件名・本文を「ご予約をキャンセルいたしました」にする（`cancelled_by` で切り替える）
+- 再送は `ReservationReceived` の再送用の文面（件名「ご予約内容のお知らせ」、以前の URL は使えなくなった旨）で送り、`mail_logs.type` は `resent`
+
+画面（`src/app/admin/(main)/` に置き、共通の枠 `AdminShell` でログインの確認・上部メニュー・ログアウトを受け持つ。ログイン画面は枠の外）
+- `/admin`：本日の予約と、各画面へのメニュー
+- `/admin/reservations`：一覧（PC は表、スマホはカード）。絞り込みと「過去の予約も表示」の状態は URL の `?` 以降に入れる（詳細から戻っても条件が残る）。最後のメールが送信失敗なら赤で表示する
+- `/admin/reservations/new`：新規登録。「確認メールを送る」のチェック（最初はオン。メールアドレスがあるときだけ有効）
+- `/admin/reservations/[id]`：詳細。日時の変更（「お知らせメールを送る」のチェック、最初はオン）、患者情報・施術希望内容の修正、キャンセル（確認とチェックつき）、メールの再送（確認つき）、その予約のメール送信記録
+- `/admin/mail-logs`：メール送信記録。送信失敗だけに絞り込める
+- 日時の選び方：日付を選ぶと、30分枠が「○ 空き／× 予約済み」付きで並ぶ（`GET /api/admin/availability/{date}`）
+- API が 401 を返したら（ログインの期限切れなど）、ログイン画面へ移動する
 
 ## 7. メール
 - Laravel の Mailable を使い、予約データのコミット後にその場で送信する（キューは使わない）。送信結果は mail_logs に記録し、失敗しても予約は成立させる

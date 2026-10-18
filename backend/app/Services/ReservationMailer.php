@@ -41,15 +41,32 @@ class ReservationMailer
     /**
      * 予約変更のお知らせを送る。メールアドレスがなければ何もしない
      *
-     * @param  string  $token  予約管理 URL の鍵（予約管理ページからの変更なので、リクエストの URL に含まれている）
+     * @param  string|null  $token  予約管理 URL の鍵。患者が予約管理ページから変更したときは、リクエストの URL に含まれている。
+     *                              院長が変更したときは null（DB にはハッシュ値しかないので、URL をメールに載せない）
      */
-    public function sendChanged(Reservation $reservation, string $token): bool
+    public function sendChanged(Reservation $reservation, ?string $token): bool
     {
         if ($reservation->patient_email === null) {
             return false;
         }
 
-        return $this->send($reservation, MailType::Changed, new ReservationChanged($reservation, self::manageUrl($token)));
+        $manageUrl = $token === null ? null : self::manageUrl($token);
+
+        return $this->send($reservation, MailType::Changed, new ReservationChanged($reservation, $manageUrl));
+    }
+
+    /**
+     * 院長が「予約内容のお知らせ」を再送する。メールアドレスがなければ何もしない
+     *
+     * @param  string  $token  作り直した予約管理 URL の鍵
+     */
+    public function sendResent(Reservation $reservation, string $token): bool
+    {
+        if ($reservation->patient_email === null) {
+            return false;
+        }
+
+        return $this->send($reservation, MailType::Resent, new ReservationReceived($reservation, self::manageUrl($token), resent: true));
     }
 
     /**
