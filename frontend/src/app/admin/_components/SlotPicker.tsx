@@ -78,8 +78,13 @@ export default function SlotPicker({ value, onChange, initialDate, currentStartA
 
       {day && (
         <div className="space-y-3">
-          <p className="text-sm text-gray-600">
-            {formatDate(day.date)}　○：空き　×：予約済み　－：時間を過ぎた枠
+          {/* 狭い画面で「時間を過ぎた枠」などが言葉の途中で改行されないよう、項目ごとにまとめて折り返す */}
+          <p className="flex flex-wrap gap-x-3 text-sm text-gray-600">
+            {[formatDate(day.date), "○：空き", "×：予約済み", "－：時間を過ぎた枠"].map((item) => (
+              <span key={item} className="whitespace-nowrap">
+                {item}
+              </span>
+            ))}
           </p>
           {day.is_closed ? (
             <p className="rounded-md bg-gray-100 px-4 py-3 text-sm text-gray-700">休診日です。</p>

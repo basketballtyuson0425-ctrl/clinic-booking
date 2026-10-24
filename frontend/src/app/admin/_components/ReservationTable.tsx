@@ -4,7 +4,8 @@ import { formatRange, MAIL_TYPE_LABELS, MailResultBadge, NeedsContactBadge, Stat
 import { panel } from "./styles";
 
 /**
- * 予約の一覧。PC では表、スマートフォンではカードで表示する（md：幅 768px 以上で切り替え）
+ * 予約の一覧。PC では表、スマートフォン・タブレットではカードで表示する（lg：幅 1024px 以上で表）。
+ * 表は7項目を並べるので幅が約 940px 必要で、それより狭いと横にずらさないと読めないため
  */
 export default function ReservationTable({ reservations }: { reservations: AdminReservation[] }) {
   if (reservations.length === 0) {
@@ -14,14 +15,15 @@ export default function ReservationTable({ reservations }: { reservations: Admin
   return (
     <>
       {/* PC：表 */}
-      <div className={`${panel} hidden overflow-x-auto md:block`}>
+      <div className={`${panel} hidden overflow-x-auto lg:block`}>
         <table className="w-full text-left text-sm">
+          {/* 列の幅は中身に合わせて自動で決まる。長い氏名やメールアドレスがあっても、
+              ほかの列が押しつぶされて縦書きのようにならないよう、見出しは折り返さず、列ごとに最低幅を決めている */}
           <thead className="border-b border-gray-200 bg-gray-50 text-xs text-gray-600">
-            <tr>
+            <tr className="whitespace-nowrap">
               <th className="px-3 py-2">予約日時</th>
               <th className="px-3 py-2">状態</th>
               <th className="px-3 py-2">氏名</th>
-              <th className="px-3 py-2">初回／再来</th>
               <th className="px-3 py-2">電話番号</th>
               <th className="px-3 py-2">メールアドレス</th>
               <th className="px-3 py-2">施術希望内容</th>
@@ -43,14 +45,19 @@ export default function ReservationTable({ reservations }: { reservations: Admin
                     </div>
                   )}
                 </td>
-                <td className="px-3 py-2 whitespace-nowrap">{reservation.patient_name}</td>
-                <td className="px-3 py-2">{VISIT_TYPE_LABELS[reservation.visit_type]}</td>
+                <td className="min-w-28 px-3 py-2">
+                  {reservation.patient_name}
+                  <span className="ml-2 text-xs whitespace-nowrap text-gray-600">{VISIT_TYPE_LABELS[reservation.visit_type]}</span>
+                </td>
                 <td className="px-3 py-2 whitespace-nowrap">{reservation.patient_phone}</td>
-                <td className="px-3 py-2">
+                <td className="min-w-36 px-3 py-2">
                   <EmailCell reservation={reservation} />
                 </td>
-                <td className="max-w-56 truncate px-3 py-2" title={reservation.treatment_request ?? undefined}>
-                  {reservation.treatment_request ?? "－"}
+                <td className="px-3 py-2">
+                  {/* 表のマス（td）には最大幅が効かないことがあるので、中の入れ物で幅を決めて「…」で省略する */}
+                  <div className="max-w-40 truncate" title={reservation.treatment_request ?? undefined}>
+                    {reservation.treatment_request ?? "－"}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -59,7 +66,7 @@ export default function ReservationTable({ reservations }: { reservations: Admin
       </div>
 
       {/* スマートフォン：カード */}
-      <ul className="space-y-2 md:hidden">
+      <ul className="space-y-2 lg:hidden">
         {reservations.map((reservation) => (
           <li key={reservation.id}>
             <Link
