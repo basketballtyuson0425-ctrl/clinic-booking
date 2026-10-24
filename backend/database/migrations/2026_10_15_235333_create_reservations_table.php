@@ -30,9 +30,12 @@ return new class extends Migration
             // 予約管理 URL のトークンは平文で保存せず、SHA-256 のハッシュ値だけを保存する
             $table->char('manage_token_hash', 64)->nullable()->unique();
 
-            // 同一人物の判定用に、表記ゆれをそろえた氏名・電話番号
-            $table->string('name_key', 100);
-            $table->string('phone_key', 20);
+            // 同一人物の判定用に、表記ゆれをそろえた氏名・電話番号。
+            // MySQL の標準の照合順序（utf8mb4_unicode_ci など）は「ハ」「バ」「パ」を同じ文字として比べるので、
+            // 別の人を同じ人とみなさないよう、1文字ずつ厳密に比べる utf8mb4_bin にする（SQLite は元から厳密に比べる）
+            $binary = in_array(Schema::getConnection()->getDriverName(), ['mysql', 'mariadb'], true) ? 'utf8mb4_bin' : null;
+            $table->string('name_key', 100)->collation($binary);
+            $table->string('phone_key', 20)->collation($binary);
 
             // 予約中のときだけ値が入り、キャンセルすると NULL になる列。
             // NULL どうしは重複とみなされないので、キャンセル済みの予約は制約に影響しない。

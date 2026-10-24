@@ -70,7 +70,7 @@ Laravel 標準のテーブル。新規登録 API は作らず、artisan コマ�
 | cancelled_at / cancelled_by | `patient` / `admin` |
 | source | `web` / `admin` |
 | manage_token_hash | char(64), unique, null 可。予約管理トークンの SHA-256 ハッシュ値 |
-| name_key / phone_key | 正規化した氏名（空白除去・全角半角の統一）と電話番号（数字のみ） |
+| name_key / phone_key | 正規化した氏名（空白除去・全角半角の統一）と電話番号（数字のみ）。MySQL では照合順序を `utf8mb4_bin` にする（標準の `utf8mb4_unicode_ci` は「ハ」「バ」「パ」を同じ文字として比べ、別の人を同じ人とみなすおそれがあるため。SQLite は元から1文字ずつ比べる） |
 | active_start_at | datetime, null 可, **UNIQUE**。予約中のときは start_at と同じ値、キャンセルしたら NULL |
 | active_date | date, null 可。**UNIQUE(active_date, name_key, phone_key)** |
 
@@ -296,7 +296,9 @@ API（すべて `/api/admin` の `auth:sanctum` の内側）
 - 画面側の CSRF：データを変える操作の前に `GET /sanctum/csrf-cookie` で合言葉（`XSRF-TOKEN` の Cookie）をもらい、`X-XSRF-TOKEN` の見出しに入れて送る（`frontend/src/lib/adminApi.ts`）。419 のときは合言葉をもらい直して1回だけやり直す
 - 画面の構成：患者側のページは `src/app/(patient)/`（共通の枠 `(patient)/layout.tsx`。URL は変わらない）、管理画面は `src/app/admin/`（共通の枠 `admin/layout.tsx`）。全体の枠 `src/app/layout.tsx` は `<html>` と `<body>` だけ
 - 401・419・429（ログインの制限を除く）・障害のときは、Laravel が返す英語の文章ではなく、画面側で用意した日本語の文章を表示する
-- パスワードを忘れたときの再設定は作らない。必要になったら、サーバー上で実行するコマンドをステップ11で検討する
+- 管理画面にパスワード再設定の機能は作らない。忘れたときは、サーバー上で `php artisan admin:password` を実行して新しいパスワード（12文字以上）を設定する。実行すると、DB に保存しているその院長のセッションを削除し、ログイン中の端末をすべてログアウトさせる（Sanctum の `AuthenticateSession` も、パスワードの変更に気づいてログアウトさせる）
+- テストの実行中はログを残さない（`phpunit.xml` の `LOG_CHANNEL=null`）。ログの内容を確かめるテストは `Log::spy()` を使う
+- 使っている部品の既知の脆弱性を `composer audit`・`npm audit` で確認する
 - 予約管理トークン：`random_bytes(32)` から生成し、DB には SHA-256 のハッシュ値だけを保存する。予約終了後は無効にし、`noindex`、`Referrer-Policy: no-referrer`、アクセス回数の制限をかける
 - 公開 API には回数制限（throttle）をかける
 - FormRequest でサーバー側の入力値チェック、`$fillable` で更新できる項目を限定、SQL は Eloquent とバインドのみで組み立てる
