@@ -16,6 +16,21 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // すべてのページに付ける、基本のセキュリティの見出し。
+        // ・ほかのサイトの中に埋め込ませない（見えない枠を重ねて押させる「クリックジャッキング」の対策）
+        // ・ファイルの種類を中身から推測させない（画像のふりをしたスクリプトの実行を防ぐ）
+        // ・ほかのサイトへ移るとき、URL のうちサイト名だけを伝える
+        // ・カメラ・マイク・位置情報は使わないので、使えないようにしておく
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+      {
+        // 同じ見出しが重なったときは、あとに書いたほうが使われる（予約管理ページは no-referrer になる）
         // 予約管理ページの URL には鍵が入っているので、
         // ・リンク先のサイトに URL を伝えない（no-referrer）
         // ・検索エンジンに載せない（noindex）

@@ -304,7 +304,13 @@ API（すべて `/api/admin` の `auth:sanctum` の内側）
 - FormRequest でサーバー側の入力値チェック、`$fillable` で更新できる項目を限定、SQL は Eloquent とバインドのみで組み立てる
 - XSS 対策：`dangerouslySetInnerHTML` は使わない
 - ログに個人情報を出力しない。`.env` は Git に含めない。本番は `APP_DEBUG=false`
-- **【ステップ11で対応】転送時の IP アドレス**：Next.js の rewrites で転送すると、Laravel からはすべてのアクセスが Next.js のサーバーから来たように見えるため、IP アドレスごとの回数制限が全員まとめて数えられてしまう。本番の構成（Vercel・レンタルサーバー）に合わせて、転送元の情報（`X-Forwarded-For`）を信頼する設定（TrustProxies）と、偽装を防ぐ仕組みを用意する
+- **転送時の IP アドレス**：Next.js の rewrites で転送すると、Laravel からはすべてのアクセスが Next.js のサーバーから来たように見え、IP アドレスごとの回数制限が全員まとめて数えられてしまう。そこで次のようにする
+  - Next.js の `src/proxy.ts` が、`/api`・`/sanctum` を転送する前に、患者の IP アドレス（`X-Clinic-Client-Ip`）と合言葉（`X-Clinic-Proxy-Secret`）を見出しに付ける。ブラウザが送ってきた同じ名前の見出しは必ず消す
+  - 患者の IP アドレスを渡すのは Vercel の上で動いているとき（`VERCEL=1`）だけ。Vercel は `X-Forwarded-For` を本当の接続元で上書きする（公式ドキュメント「Request headers」）。ほかの場所では Next.js がブラウザの送った `X-Forwarded-For` をそのまま残すので使わない
+  - Laravel の `TrustFrontendProxy` ミドルウェア（最初に動かす）は、合言葉が `CLINIC_PROXY_SECRET` と一致し（`hash_equals`）、値が IP アドレスの形のときだけ、それを `$request->ip()` にする。合言葉の見出しは、このあとの処理に残さない
+  - 合言葉がない・違うリクエスト（Laravel に直接届いたものなど）は、つながってきた相手の IP アドレスのまま。Laravel 標準の TrustProxies（`X-Forwarded-For` を信じる設定）は使わない。Vercel の IP アドレスは決まっておらず、信じる相手を IP アドレスで絞れないため
+  - 合言葉は Next.js と Laravel の両方の `.env` に同じ値を設定する。Next.js 側は `NEXT_PUBLIC_` を付けず、ブラウザに渡さない
+- 画面のセキュリティの見出し（`next.config.ts` の headers、すべてのページ）：`X-Frame-Options: DENY`・`X-Content-Type-Options: nosniff`・`Referrer-Policy: strict-origin-when-cross-origin`・`Permissions-Policy: camera=(), microphone=(), geolocation=()`。予約管理ページはあとに書いた設定で `Referrer-Policy: no-referrer` に上書きする。CSP は、Next.js では全ページの作り方を変える必要があるため入れない
 
 ## 9. 自動削除
 - Reservation モデルに `Prunable` を設定し、`end_at < now()->subYear()` の予約を削除対象にする

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\TrustFrontendProxy;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,7 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // 回数制限などで IP アドレスを使う前に、患者の本当の IP アドレスに置き換えておくため、いちばん最初に動かす
+        $middleware->prepend(TrustFrontendProxy::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
