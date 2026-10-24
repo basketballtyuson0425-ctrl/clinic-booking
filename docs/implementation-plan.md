@@ -306,8 +306,14 @@ API（すべて `/api/admin` の `auth:sanctum` の内側）
 
 ## 9. 自動削除
 - Reservation モデルに `Prunable` を設定し、`end_at < now()->subYear()` の予約を削除対象にする
-- `routes/console.php` に `Schedule::command('model:prune')->dailyAt('03:00')` を書く
-- サーバーの cron で `php artisan schedule:run` を毎分実行する
+  - 1件ずつ削除する `Prunable` を使う（`MassPrunable` は使わない）。予約は1日数十件で量が少なく、削除のときの処理をあとから足しやすいため
+  - キャンセル済みの予約も、同じ「終了時刻から1年」で削除する（要件14）
+  - ちょうど1年の時刻のものは残す（`<` で比べる。「1年を過ぎたもの」を削除する）
+  - メールの送信記録（mail_logs）は、外部キーの `cascadeOnDelete` で予約と一緒に削除される
+- `routes/console.php` に `Schedule::command('model:prune')->dailyAt('03:00')` を書く（時刻はアプリのタイムゾーン `Asia/Tokyo`）
+- 削除した件数だけを `laravel.log` に残す（`ModelsPruned` イベントを `AppServiceProvider` で受け取る）。個人情報は書かない。0件の日は書かれない
+- サーバーの cron で `php artisan schedule:run` を毎分実行する（設定方法はステップ11で README に書く）
+- テスト：`tests/Feature/ReservationPruneTest.php`（1年を過ぎた予約の削除・境界・キャンセル済み・mail_logs・ログの内容・スケジュールの登録）
 
 ## 10. 実装手順
 | # | 内容 |

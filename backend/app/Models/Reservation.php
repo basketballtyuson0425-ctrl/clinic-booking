@@ -10,8 +10,10 @@ use App\Services\Availability;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -35,6 +37,9 @@ class Reservation extends Model
 {
     /** @use HasFactory<ReservationFactory> */
     use HasFactory;
+
+    // 古い予約の自動削除（毎日 03:00 の model:prune。routes/console.php を参照）
+    use Prunable;
 
     // 予約枠の長さ（分）
     public const SLOT_MINUTES = 30;
@@ -85,6 +90,16 @@ class Reservation extends Model
                 $reservation->active_date = null;
             }
         });
+    }
+
+    /**
+     * 自動削除の対象：終了時刻から1年を過ぎた予約（キャンセル済みも含む）。
+     * 個人情報を必要以上に持ち続けないため。ちょうど1年の時刻のものは「過ぎていない」ので残す。
+     * 1件ずつ削除する（Prunable）。メールの送信記録（mail_logs）は外部キーの設定で一緒に消える。
+     */
+    public function prunable(): Builder
+    {
+        return static::where('end_at', '<', now()->subYear());
     }
 
     /**
