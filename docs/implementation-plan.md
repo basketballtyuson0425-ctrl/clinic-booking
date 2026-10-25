@@ -303,7 +303,7 @@ API（すべて `/api/admin` の `auth:sanctum` の内側）
 - 公開 API には回数制限（throttle）をかける
 - FormRequest でサーバー側の入力値チェック、`$fillable` で更新できる項目を限定、SQL は Eloquent とバインドのみで組み立てる
 - XSS 対策：`dangerouslySetInnerHTML` は使わない
-- ログに個人情報を出力しない。`.env` は Git に含めない。本番は `APP_DEBUG=false`
+- ログに個人情報を出力しない。`.env` は Git に含めない。本番は `APP_DEBUG=false`・`LOG_LEVEL=info`・`SESSION_SECURE_COOKIE=true`（本番の手順と `.env` の値は README の「本番環境」）
 - **転送時の IP アドレス**：Next.js の rewrites で転送すると、Laravel からはすべてのアクセスが Next.js のサーバーから来たように見え、IP アドレスごとの回数制限が全員まとめて数えられてしまう。そこで次のようにする
   - Next.js の `src/proxy.ts` が、`/api`・`/sanctum` を転送する前に、患者の IP アドレス（`X-Clinic-Client-Ip`）と合言葉（`X-Clinic-Proxy-Secret`）を見出しに付ける。ブラウザが送ってきた同じ名前の見出しは必ず消す
   - 患者の IP アドレスを渡すのは Vercel の上で動いているとき（`VERCEL=1`）だけ。Vercel は `X-Forwarded-For` を本当の接続元で上書きする（公式ドキュメント「Request headers」）。ほかの場所では Next.js がブラウザの送った `X-Forwarded-For` をそのまま残すので使わない
@@ -320,7 +320,7 @@ API（すべて `/api/admin` の `auth:sanctum` の内側）
   - メールの送信記録（mail_logs）は、外部キーの `cascadeOnDelete` で予約と一緒に削除される
 - `routes/console.php` に `Schedule::command('model:prune')->dailyAt('03:00')` を書く（時刻はアプリのタイムゾーン `Asia/Tokyo`）
 - 削除した件数だけを `laravel.log` に残す（`ModelsPruned` イベントを `AppServiceProvider` で受け取る）。個人情報は書かない。0件の日は書かれない
-- サーバーの cron で `php artisan schedule:run` を毎分実行する（設定方法はステップ11で README に書く）
+- サーバーの cron で `php artisan schedule:run` を毎分実行する（設定方法は README の「本番環境 > 3. 自動削除のための cron」）
 - テスト：`tests/Feature/ReservationPruneTest.php`（1年を過ぎた予約の削除・境界・キャンセル済み・mail_logs・ログの内容・スケジュールの登録）
 
 ## 10. 実装手順
