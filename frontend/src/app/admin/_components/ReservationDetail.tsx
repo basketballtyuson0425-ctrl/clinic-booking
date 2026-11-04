@@ -17,19 +17,22 @@ import { isFuture } from "@/lib/date";
 import {
   formatRange,
   MAIL_TYPE_LABELS,
-  MailResultBadge,
-  NeedsContactBadge,
+  MailResultMark,
+  NeedsContactMark,
   slotEnd,
-  StatusBadge,
+  StatusMark,
   VISIT_TYPE_LABELS,
 } from "./labels";
 import PatientFields, { patientFromReservation, toFieldErrors, type FieldErrors } from "./PatientFields";
 import SlotPicker from "./SlotPicker";
-import { adminDangerButton, adminPrimaryButton, adminSecondaryButton, panel } from "./styles";
+import { adminDangerButton, adminPrimaryButton, adminSecondaryButton, noticeLine } from "./styles";
 import { useAdminError } from "./useAdminError";
 
 // 画面の状態：表示中／日時の変更／患者情報の修正／キャンセルの確認／再送の確認
 type Mode = "view" | "time" | "info" | "cancel" | "resend";
+
+// 日時の変更・患者情報の修正の入力欄。箱で囲まず、上の罫線で区切る
+const section = "space-y-4 border-t border-gray-300 pt-5";
 
 /** 予約の詳細（/admin/reservations/[id]）。日時の変更・患者情報の修正・キャンセル・メールの再送を行う */
 export default function ReservationDetail({ id }: { id: string }) {
@@ -232,14 +235,16 @@ export default function ReservationDetail({ id }: { id: string }) {
         </Link>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-bold">{currentLabel}</h1>
-        <StatusBadge reservation={reservation} />
-        {reservation.needs_contact && <NeedsContactBadge />}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h1 className={`text-2xl font-bold ${reservation.status === "cancelled" ? "text-gray-500 line-through" : ""}`}>
+          {currentLabel}
+        </h1>
+        <StatusMark reservation={reservation} />
+        {reservation.needs_contact && <NeedsContactMark />}
       </div>
 
       {reservation.needs_contact && (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+        <p className={noticeLine} role="alert">
           営業時間の変更で、この予約は営業時間外になりました。患者さんにお電話で連絡し、日時を変更するか、キャンセルしてください。
         </p>
       )}
@@ -258,7 +263,7 @@ export default function ReservationDetail({ id }: { id: string }) {
 
       {/* ---- 日時の変更 ---- */}
       {mode === "time" && (
-        <section className={`${panel} space-y-4 px-4 py-4`}>
+        <section className={section}>
           <h2 className="text-lg font-bold">予約日時の変更</h2>
           <SlotPicker
             value={newStartAt}
@@ -293,7 +298,7 @@ export default function ReservationDetail({ id }: { id: string }) {
 
       {/* ---- 患者情報の修正 ---- */}
       {mode === "info" && patientDraft && (
-        <section className={`${panel} space-y-4 px-4 py-4`}>
+        <section className={section}>
           <h2 className="text-lg font-bold">患者情報・施術希望内容の修正</h2>
           <p className="text-sm text-gray-600">修正しても、患者さんにメールは送りません。</p>
           <PatientFields value={patientDraft} errors={fieldErrors} onChange={setPatientDraft} />
@@ -308,7 +313,7 @@ export default function ReservationDetail({ id }: { id: string }) {
 
       {/* ---- キャンセルの確認 ---- */}
       {mode === "cancel" && (
-        <section className={`${panel} space-y-4 border-red-200 px-4 py-4`}>
+        <section className={`${noticeLine} space-y-4 py-1`}>
           <h2 className="text-lg font-bold">この予約をキャンセルします。よろしいですか？</h2>
           <p className="font-bold">
             {currentLabel}　{reservation.patient_name} 様
@@ -327,7 +332,7 @@ export default function ReservationDetail({ id }: { id: string }) {
 
       {/* ---- 再送の確認 ---- */}
       {mode === "resend" && (
-        <section className={`${panel} space-y-4 px-4 py-4`}>
+        <section className={`${noticeLine} space-y-4 py-1`}>
           <h2 className="text-lg font-bold">予約内容のお知らせを送り直します。よろしいですか？</h2>
           <p className="text-sm">
             送り先：<span className="font-bold">{reservation.patient_email}</span>
@@ -335,7 +340,7 @@ export default function ReservationDetail({ id }: { id: string }) {
           <p className="text-sm text-gray-700">
             予約管理ページの URL を新しく作ってお送りします。
             {reservation.has_manage_url && (
-              <span className="font-bold text-red-700">以前お送りしたメールの URL は使えなくなります。</span>
+              <span className="font-bold text-alert">以前お送りしたメールの URL は使えなくなります。</span>
             )}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -352,8 +357,8 @@ export default function ReservationDetail({ id }: { id: string }) {
       {/* ---- 表示 ---- */}
       {mode === "view" && (
         <>
-          <section className={panel}>
-            <dl className="divide-y divide-gray-100 text-sm">
+          <section>
+            <dl className="divide-y divide-gray-100 border-y border-gray-300 text-sm">
               <Row label="氏名">{reservation.patient_name}</Row>
               <Row label="電話番号">
                 <a href={`tel:${reservation.patient_phone}`} className="text-brand underline">
@@ -412,7 +417,7 @@ export default function ReservationDetail({ id }: { id: string }) {
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid gap-1 px-4 py-3 sm:grid-cols-[9rem_1fr]">
+    <div className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr]">
       <dt className="text-gray-600">{label}</dt>
       <dd className="break-all">{children}</dd>
     </div>
@@ -429,16 +434,16 @@ function MailLogSection({ reservation }: { reservation: AdminReservation }) {
       {logs.length === 0 ? (
         <p className="text-sm text-gray-600">この予約に送ったメールはありません。</p>
       ) : (
-        <ul className={`${panel} divide-y divide-gray-100 text-sm`}>
+        <ul className="divide-y divide-gray-100 border-y border-gray-300 text-sm">
           {logs.map((log) => (
-            <li key={log.id} className="space-y-1 px-4 py-3">
+            <li key={log.id} className="space-y-1 py-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-gray-600">{log.created_at}</span>
                 <span className="font-bold">{MAIL_TYPE_LABELS[log.type]}</span>
-                <MailResultBadge log={log} />
+                <MailResultMark log={log} />
               </div>
               <p className="break-all text-gray-600">宛先：{log.to_email}</p>
-              {log.error_message && <p className="break-all text-red-700">{log.error_message}</p>}
+              {log.error_message && <p className="wrap-anywhere text-alert">{log.error_message}</p>}
             </li>
           ))}
         </ul>

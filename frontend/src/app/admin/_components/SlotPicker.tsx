@@ -87,7 +87,7 @@ export default function SlotPicker({ value, onChange, initialDate, currentStartA
             ))}
           </p>
           {day.is_closed ? (
-            <p className="rounded-md bg-gray-100 px-4 py-3 text-sm text-gray-700">休診日です。</p>
+            <p className="text-sm text-gray-700">休診日です。</p>
           ) : (
             (["am", "pm"] as const).map((period) => (
               <SlotGroup
@@ -154,18 +154,19 @@ function SlotGroup({
               aria-pressed={selected}
               aria-label={`${formatTime(slot.time)} ${status}`}
               onClick={() => onSelect(startAt)}
+              // 空き枠を全部緑の枠にすると、どれも同じに見えて目立たない。枠は灰色にして ○ だけを緑にし、選んだ枠だけを塗る
               className={`flex min-h-12 flex-col items-center justify-center rounded-md border text-sm ${
                 selected
                   ? "border-brand bg-brand font-bold text-white"
                   : slot.available
-                    ? "border-brand bg-white hover:bg-brand-light"
+                    ? "border-gray-300 bg-white hover:border-brand hover:bg-brand-light"
                     : isCurrent
-                      ? "border-brand-dark bg-brand-light text-brand-dark"
-                      : "border-gray-200 bg-gray-100 text-gray-400"
+                      ? "border-dashed border-brand-dark text-brand-dark"
+                      : "border-gray-100 bg-gray-50 text-gray-400"
               }`}
             >
               <span>{formatTime(slot.time)}</span>
-              <span className="font-bold">{mark}</span>
+              <span className={`font-bold ${slot.available && !selected ? "text-brand" : ""}`}>{mark}</span>
             </button>
           );
         })}

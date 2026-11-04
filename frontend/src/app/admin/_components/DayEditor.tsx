@@ -19,7 +19,7 @@ import { formatHours, formatPeriod, hoursFromDay } from "./hours";
 import HoursFields from "./HoursFields";
 import ImpactConfirm from "./ImpactConfirm";
 import { toFieldErrors } from "./PatientFields";
-import { adminDangerButton, adminPrimaryButton, adminSecondaryButton, panel } from "./styles";
+import { adminDangerButton, adminPrimaryButton, adminSecondaryButton, noticeLine } from "./styles";
 import { useAdminError } from "./useAdminError";
 
 // 画面の状態：見るだけ／編集中／保存前の確認
@@ -111,7 +111,7 @@ export default function DayEditor({ day, onSaved }: Props) {
   }
 
   return (
-    <section className={`${panel} space-y-4 px-4 py-4`} aria-label={`${formatDate(day.date)}の営業時間`}>
+    <section className="space-y-4 border-t border-gray-300 pt-5" aria-label={`${formatDate(day.date)}の営業時間`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-bold">
           {formatDate(day.date)}
@@ -148,7 +148,7 @@ export default function DayEditor({ day, onSaved }: Props) {
               </Link>
             )}
             {day.needs_contact_count > 0 && (
-              <span className="ml-2 font-bold text-amber-700">（要連絡 {day.needs_contact_count} 件）</span>
+              <span className="ml-2 font-bold text-alert">（要連絡 {day.needs_contact_count} 件）</span>
             )}
           </p>
           {editable ? (
@@ -234,7 +234,7 @@ function SavedMessage({ done }: { done: { affected: AffectedReservation[]; mail:
         </p>
       )}
       {done.affected.length > 0 && (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className={noticeLine}>
           営業時間外になった予約が {done.affected.length} 件あります（要連絡）。
           <Link href="/admin/reservations?needs_contact=1" className="ml-1 font-bold underline">
             要連絡の予約を見る

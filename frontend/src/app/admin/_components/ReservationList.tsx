@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { alertBox } from "@/components/ui";
 import {
   fetchReservations,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/adminApi";
 import Pagination from "./Pagination";
 import ReservationTable from "./ReservationTable";
-import { adminPrimaryButton, adminSecondaryButton, panel, textInput } from "./styles";
+import { adminPrimaryButton, adminQuietButton, underlineInput } from "./styles";
 import { useAdminError } from "./useAdminError";
 
 /**
@@ -53,89 +53,78 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">予約一覧</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">予約一覧</h1>
 
-      <form onSubmit={handleSubmit} className={`${panel} grid gap-3 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4`}>
-        <div>
-          <label htmlFor="filterDate" className="mb-1 block text-sm font-bold">
-            日付
-          </label>
+      {/* 絞り込みは画面の脇役なので、箱で囲まず、下線だけの入力欄を横に並べる */}
+      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-x-6 gap-y-4">
+        <Filter id="filterDate" label="日付" className="w-full sm:w-40">
           <input
             id="filterDate"
             type="date"
             value={draft.date}
             onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            className={textInput}
+            className={underlineInput}
           />
-        </div>
-        <div>
-          <label htmlFor="filterName" className="mb-1 block text-sm font-bold">
-            氏名（一部でも可）
-          </label>
+        </Filter>
+        <Filter id="filterName" label="氏名（一部でも可）" className="w-full sm:w-44">
           <input
             id="filterName"
             type="search"
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            className={textInput}
+            className={underlineInput}
           />
-        </div>
-        <div>
-          <label htmlFor="filterPhone" className="mb-1 block text-sm font-bold">
-            電話番号（一部でも可）
-          </label>
+        </Filter>
+        <Filter id="filterPhone" label="電話番号（一部でも可）" className="w-full sm:w-40">
           <input
             id="filterPhone"
             type="search"
             inputMode="tel"
             value={draft.phone}
             onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
-            className={textInput}
+            className={underlineInput}
           />
-        </div>
-        <div>
-          <label htmlFor="filterStatus" className="mb-1 block text-sm font-bold">
-            状態
-          </label>
+        </Filter>
+        <Filter id="filterStatus" label="状態" className="w-full sm:w-36">
           <select
             id="filterStatus"
             value={draft.status}
             onChange={(e) => setDraft({ ...draft, status: e.target.value as ReservationFilters["status"] })}
-            className={textInput}
+            className={underlineInput}
           >
             <option value="">すべて</option>
             <option value="reserved">予約中</option>
             <option value="cancelled">キャンセル済み</option>
           </select>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-4">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={draft.includePast}
-              onChange={(e) => setDraft({ ...draft, includePast: e.target.checked })}
-              className="h-4 w-4 accent-brand"
-            />
-            過去の予約も表示（日付を指定したときは、その日の予約を表示します）
-          </label>
-          <label className="flex items-center gap-2 text-sm">
+        </Filter>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          <label className="flex min-h-10 items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
               checked={draft.needsContact}
               onChange={(e) => setDraft({ ...draft, needsContact: e.target.checked })}
               className="h-4 w-4 accent-brand"
             />
-            要連絡の予約だけ
+            要連絡だけ
           </label>
-          <div className="ml-auto flex gap-2">
-            <button type="button" className={adminSecondaryButton} onClick={() => router.push("/admin/reservations")}>
-              条件をクリア
-            </button>
-            <button type="submit" className={adminPrimaryButton}>
-              検索
-            </button>
-          </div>
+          <label className="flex min-h-10 items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={draft.includePast}
+              onChange={(e) => setDraft({ ...draft, includePast: e.target.checked })}
+              className="h-4 w-4 accent-brand"
+            />
+            過去の予約も表示
+          </label>
+        </div>
+        <div className="flex w-full items-center justify-between gap-4 sm:ml-auto sm:w-auto">
+          <button type="button" className={adminQuietButton} onClick={() => router.push("/admin/reservations")}>
+            条件をクリア
+          </button>
+          <button type="submit" className={adminPrimaryButton}>
+            検索
+          </button>
         </div>
       </form>
 
@@ -148,10 +137,11 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
 
       {result && (
         <>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs text-gray-500">
             {result.meta.total} 件
             {result.meta.total > 0 && `（${result.meta.from}〜${result.meta.to} 件目を表示）`}
-            {!filters.date && !filters.includePast && "　※ 今日以降の予約を表示しています"}
+            {/* 日付を指定したときは、過去の日でもその日の予約を表示する（「過去の予約も表示」は関係しない） */}
+            {!filters.date && !filters.includePast && "　今日以降の予約を表示しています"}
           </p>
           <ReservationTable reservations={result.data} />
           <Pagination
@@ -161,6 +151,18 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
           />
         </>
       )}
+    </div>
+  );
+}
+
+/** 絞り込みの1項目（小さな見出し＋入力欄） */
+function Filter({ id, label, className, children }: { id: string; label: string; className: string; children: ReactNode }) {
+  return (
+    <div className={className}>
+      <label htmlFor={id} className="block text-xs text-gray-500">
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

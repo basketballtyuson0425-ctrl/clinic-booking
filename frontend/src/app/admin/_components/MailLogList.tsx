@@ -6,9 +6,8 @@ import { useEffect, useState } from "react";
 import { alertBox } from "@/components/ui";
 import { fetchMailLogs, type MailLogEntry, type Paginated } from "@/lib/adminApi";
 import { formatDateTime } from "@/lib/date";
-import { MAIL_TYPE_LABELS, MailResultBadge } from "./labels";
+import { MAIL_TYPE_LABELS, MailResultMark } from "./labels";
 import Pagination from "./Pagination";
-import { panel } from "./styles";
 import { useAdminError } from "./useAdminError";
 
 type Props = {
@@ -48,7 +47,7 @@ export default function MailLogList({ failedOnly, page }: Props) {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">メール送信記録</h1>
+      <h1 className="text-2xl font-bold">メール送信記録</h1>
 
       <label className="flex items-center gap-2 text-sm">
         <input
@@ -68,33 +67,33 @@ export default function MailLogList({ failedOnly, page }: Props) {
       {!error && result === null && <p className="py-6 text-center text-gray-500">読み込み中…</p>}
 
       {result && result.data.length === 0 && (
-        <p className={`${panel} px-4 py-8 text-center text-sm text-gray-600`}>該当するメールはありません。</p>
+        <p className="border-y border-gray-200 py-8 text-center text-sm text-gray-600">該当するメールはありません。</p>
       )}
 
       {result && result.data.length > 0 && (
         <>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs text-gray-500">
             {result.meta.total} 件（{result.meta.from}〜{result.meta.to} 件目を表示）
           </p>
-          <ul className={`${panel} divide-y divide-gray-100 text-sm`}>
+          {/* 送信失敗の行も背景を塗らず、「※ 送信失敗」の朱色の文字だけで目立たせる */}
+          <ul className="divide-y divide-gray-100 border-y border-gray-300 text-sm">
             {result.data.map((log) => (
-              <li
-                key={log.id}
-                className={`grid gap-1 px-4 py-3 md:grid-cols-[9rem_12rem_1fr_1fr] md:items-center md:gap-3 ${
-                  log.status === "failed" ? "bg-red-50" : ""
-                }`}
-              >
-                <span className="text-gray-600">{log.created_at}</span>
-                <span className="flex items-center gap-2">
-                  <MailResultBadge log={log} />
+              <li key={log.id} className="grid gap-1 py-3 md:grid-cols-[9rem_14rem_1fr_1fr] md:items-baseline md:gap-4">
+                <span className="text-gray-500 tabular-nums">{log.created_at}</span>
+                <span className="flex items-baseline gap-3">
                   <span className="font-bold whitespace-nowrap">{MAIL_TYPE_LABELS[log.type]}</span>
+                  <MailResultMark log={log} />
                 </span>
-                <span className="break-all">
+                {/* 単語の切れ目で折り返し、長いメールアドレスなどで入りきらないときだけ途中で折り返す */}
+                <span className="wrap-anywhere">
                   {log.to_email}
-                  {log.error_message && <span className="block text-red-700">{log.error_message}</span>}
+                  {log.error_message && <span className="block text-alert">{log.error_message}</span>}
                 </span>
                 {log.reservation && (
-                  <Link href={`/admin/reservations/${log.reservation.id}`} className="text-brand underline">
+                  <Link
+                    href={`/admin/reservations/${log.reservation.id}`}
+                    className="underline decoration-gray-300 underline-offset-4 hover:decoration-current"
+                  >
                     {formatDateTime(log.reservation.start_at)}　{log.reservation.patient_name} 様
                   </Link>
                 )}

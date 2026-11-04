@@ -2,7 +2,7 @@
 
 import type { HoursImpact } from "@/lib/adminApi";
 import { formatRange } from "./labels";
-import { adminPrimaryButton, adminSecondaryButton } from "./styles";
+import { adminPrimaryButton, adminSecondaryButton, noticeLine } from "./styles";
 
 type Props = {
   impact: HoursImpact;
@@ -22,19 +22,20 @@ export default function ImpactConfirm({ impact, message, sendMail, submitting, o
   const withEmail = impact.affected.filter((reservation) => reservation.has_email).length;
 
   return (
-    <div className="space-y-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-4" role="alertdialog" aria-label="変更の確認">
-      <p className="font-bold text-amber-900">{message}</p>
+    <div className={`${noticeLine} space-y-4 py-1`} role="alertdialog" aria-label="変更の確認">
+      <p className="text-base font-bold">{message}</p>
 
       {impact.affected.length === 0 ? (
         <p className="text-sm text-gray-700">新しい営業時間から外れる予約はありません。</p>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm font-bold text-red-700">
+          <p className="font-bold text-alert">
             新しい営業時間から外れる予約が {impact.affected.length} 件あります。変更後は「要連絡」と表示されます。患者さんにお電話で連絡してください。
           </p>
-          <ul className="divide-y divide-amber-200 rounded-md border border-amber-200 bg-white text-sm">
+          {/* 箱を重ねず（枠の中に黄色い箱、その中にさらに枠…としない）、罫線だけで区切る */}
+          <ul className="divide-y divide-gray-100 border-y border-gray-300">
             {impact.affected.map((reservation) => (
-              <li key={reservation.id} className="flex flex-wrap gap-x-4 gap-y-1 px-3 py-2">
+              <li key={reservation.id} className="flex flex-wrap gap-x-4 gap-y-1 py-2">
                 <span className="font-bold whitespace-nowrap">{formatRange(reservation.start_at, reservation.end_at)}</span>
                 <span>{reservation.patient_name} 様</span>
                 <a href={`tel:${reservation.patient_phone}`} className="text-brand underline">
@@ -44,7 +45,7 @@ export default function ImpactConfirm({ impact, message, sendMail, submitting, o
               </li>
             ))}
           </ul>
-          <label className={`flex items-center gap-2 text-sm ${withEmail > 0 ? "" : "text-gray-400"}`}>
+          <label className={`flex items-center gap-2 ${withEmail > 0 ? "" : "text-gray-400"}`}>
             <input
               type="checkbox"
               checked={sendMail && withEmail > 0}

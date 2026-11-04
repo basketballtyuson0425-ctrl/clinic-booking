@@ -130,8 +130,9 @@ export default function PatientFields({ value, errors, onChange }: Props) {
   );
 }
 
+/** 必須の印。全項目の横に赤い印が並ぶと強調が多すぎるので、灰色の小さな文字にする（入力の誤りは赤で欄の下に出る） */
 function RequiredMark() {
-  return <span className="ml-1 text-xs font-normal text-red-700">（必須）</span>;
+  return <span className="ml-1 text-xs font-normal text-gray-500">（必須）</span>;
 }
 
 function ErrorText({ children }: { children: ReactNode }) {

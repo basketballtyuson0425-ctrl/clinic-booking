@@ -8,8 +8,11 @@ import { ApiError } from "@/lib/api";
 import { formatRange, slotEnd } from "./labels";
 import PatientFields, { emptyPatient, toFieldErrors, type FieldErrors } from "./PatientFields";
 import SlotPicker from "./SlotPicker";
-import { adminPrimaryButton, adminSecondaryButton, panel } from "./styles";
+import { adminPrimaryButton, adminSecondaryButton } from "./styles";
 import { useAdminError } from "./useAdminError";
+
+// 入力のまとまり（日時・患者情報・確認メール）。箱で囲まず、上の罫線で区切る
+const section = "space-y-3 border-t border-gray-300 pt-5";
 
 /** 新規登録の結果 */
 type Created = { reservation: AdminReservation; mailSent: boolean; mailRequested: boolean };
@@ -83,7 +86,7 @@ export default function NewReservation() {
     const { reservation, mailSent, mailRequested } = created;
     return (
       <div className="space-y-5">
-        <h1 className="text-xl font-bold">予約を登録しました</h1>
+        <h1 className="text-2xl font-bold">予約を登録しました</h1>
         <div className={successBox} role="status">
           <p className="text-base font-bold">
             {formatRange(reservation.start_at, reservation.end_at)}　{reservation.patient_name} 様
@@ -114,7 +117,7 @@ export default function NewReservation() {
   // ---- 入力 ----
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
-      <h1 className="text-xl font-bold">予約の新規登録</h1>
+      <h1 className="text-2xl font-bold">予約の新規登録</h1>
 
       {message && (
         <p className={alertBox} role="alert">
@@ -122,8 +125,8 @@ export default function NewReservation() {
         </p>
       )}
 
-      <section className={`${panel} space-y-3 px-4 py-4`}>
-        <h2 className="font-bold">予約日時</h2>
+      <section className={section}>
+        <h2 className="text-lg font-bold">予約日時</h2>
         <SlotPicker
           value={startAt}
           onChange={(value) => {
@@ -140,12 +143,13 @@ export default function NewReservation() {
         )}
       </section>
 
-      <section className={`${panel} space-y-3 px-4 py-4`}>
-        <h2 className="font-bold">患者情報</h2>
+      <section className={section}>
+        <h2 className="text-lg font-bold">患者情報</h2>
         <PatientFields value={patient} errors={errors} onChange={setPatient} />
       </section>
 
-      <section className={`${panel} space-y-1 px-4 py-4`}>
+      <section className={section}>
+        <h2 className="text-lg font-bold">確認メール</h2>
         <label className={`flex items-center gap-2 ${hasEmail ? "" : "text-gray-400"}`}>
           <input
             type="checkbox"

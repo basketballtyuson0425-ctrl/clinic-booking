@@ -18,7 +18,7 @@ import { formatHours } from "./hours";
 import HoursFields from "./HoursFields";
 import ImpactConfirm from "./ImpactConfirm";
 import { toFieldErrors } from "./PatientFields";
-import { adminPrimaryButton, adminSecondaryButton, panel } from "./styles";
+import { adminPrimaryButton, adminSecondaryButton, noticeLine } from "./styles";
 import { useAdminError } from "./useAdminError";
 
 type Mode = "view" | "edit" | "confirm";
@@ -125,7 +125,7 @@ export default function WeeklyEditor({ onSaved }: Props) {
   }
 
   return (
-    <section className={`${panel} space-y-4 px-4 py-4`} aria-label="基本の営業時間">
+    <section className="space-y-4 border-t border-gray-300 pt-5" aria-label="基本の営業時間">
       <div>
         <h2 className="text-lg font-bold">基本の営業時間（曜日ごと）</h2>
         <p className="text-sm text-gray-600">日付ごとの設定がない日は、この営業時間になります（祝日は休診）。</p>
@@ -142,7 +142,7 @@ export default function WeeklyEditor({ onSaved }: Props) {
             </p>
           )}
           {done.affected.length > 0 && (
-            <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className={noticeLine}>
               営業時間外になった予約が {done.affected.length} 件あります（要連絡）。
               <Link href="/admin/reservations?needs_contact=1" className="ml-1 font-bold underline">
                 要連絡の予約を見る
@@ -162,7 +162,7 @@ export default function WeeklyEditor({ onSaved }: Props) {
       {/* ---- 見るだけ ---- */}
       {mode === "view" && schedules && (
         <>
-          <dl className="divide-y divide-gray-100 text-sm">
+          <dl className="divide-y divide-gray-100 border-y border-gray-200 text-sm">
             {schedules.map((schedule) => (
               <div key={schedule.day_of_week} className="grid grid-cols-[3rem_1fr] gap-2 py-2">
                 <dt className="font-bold">{WEEKDAY_LABELS[schedule.day_of_week]}曜</dt>
@@ -192,10 +192,11 @@ export default function WeeklyEditor({ onSaved }: Props) {
       {/* ---- 編集中 ---- */}
       {mode === "edit" && (
         <div className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-2">
+          {/* 曜日ごとに箱で囲まず、下の罫線で区切る */}
+          <div className="grid gap-x-10 lg:grid-cols-2">
             {draft.map((schedule, index) => (
-              <fieldset key={schedule.day_of_week} className="space-y-3 rounded-md border border-gray-200 px-3 py-3">
-                <legend className="px-1 font-bold">{WEEKDAY_LABELS[schedule.day_of_week]}曜</legend>
+              <fieldset key={schedule.day_of_week} className="space-y-3 border-b border-gray-200 pb-4">
+                <legend className="pt-4 pb-1 font-bold">{WEEKDAY_LABELS[schedule.day_of_week]}曜</legend>
                 <HoursFields
                   id={`weekly-${schedule.day_of_week}`}
                   value={schedule}

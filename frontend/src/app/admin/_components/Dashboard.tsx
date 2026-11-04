@@ -6,7 +6,6 @@ import { alertBox } from "@/components/ui";
 import { fetchReservations, type AdminReservation } from "@/lib/adminApi";
 import { formatDate, todayString } from "@/lib/date";
 import ReservationTable from "./ReservationTable";
-import { panel } from "./styles";
 import { useAdminError } from "./useAdminError";
 
 const MENU = [
@@ -16,7 +15,7 @@ const MENU = [
   { href: "/admin/mail-logs", label: "メール送信記録", description: "患者さんに送ったメールと、送信の失敗" },
 ];
 
-/** 管理画面のトップ（/admin）。本日の予約と、各画面へのメニュー */
+/** 管理画面のトップ（/admin）。要連絡の予約・本日の予約と、各画面へのメニュー */
 export default function Dashboard() {
   const toErrorMessage = useAdminError();
   const [today] = useState(todayString);
@@ -44,11 +43,25 @@ export default function Dashboard() {
   const activeCount = reservations?.filter((reservation) => reservation.status === "reserved").length ?? 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-2xl font-bold">ダッシュボード</h1>
+        <p className="text-sm text-gray-500">{formatDate(today)}</p>
+      </div>
+
+      {error && (
+        <p className={alertBox} role="alert">
+          {error}
+        </p>
+      )}
+
+      {/* 要連絡は箱で囲まず、見出しの件数だけを朱色にする */}
       {needsContact.length > 0 && (
-        <section className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-4">
-          <h2 className="text-lg font-bold text-amber-900">要連絡の予約（{needsContact.length} 件）</h2>
-          <p className="text-sm text-amber-900">
+        <section className="space-y-3">
+          <h2 className="text-lg font-bold">
+            要連絡の予約　<span className="text-alert">{needsContact.length}</span> 件
+          </h2>
+          <p className="max-w-2xl text-sm text-gray-600">
             営業時間の変更で、営業時間外になった予約です。患者さんにお電話で連絡し、日時を変更するか、キャンセルしてください。
           </p>
           <ReservationTable reservations={needsContact} />
@@ -57,26 +70,22 @@ export default function Dashboard() {
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-xl font-bold">本日の予約（{formatDate(today)}）</h1>
-          {reservations && <p className="text-sm text-gray-600">予約中 {activeCount} 件（キャンセル済みを除く）</p>}
+          <h2 className="text-lg font-bold">本日の予約</h2>
+          {reservations && <p className="text-sm text-gray-500">予約中 {activeCount} 件（キャンセル済みを除く）</p>}
         </div>
-        {error && (
-          <p className={alertBox} role="alert">
-            {error}
-          </p>
-        )}
         {!error && reservations === null && <p className="py-6 text-center text-gray-500">読み込み中…</p>}
-        {reservations && <ReservationTable reservations={reservations} />}
+        {reservations && <ReservationTable reservations={reservations} groupByDate={false} />}
       </section>
 
+      {/* サイドバーと同じ行き先なので、カードにせず、罫線で区切った控えめな一覧にする */}
       <section className="space-y-3">
         <h2 className="text-lg font-bold">メニュー</h2>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="grid border-t border-gray-300 sm:grid-cols-2 sm:gap-x-12">
           {MENU.map((item) => (
-            <li key={item.href}>
-              <Link href={item.href} className={`${panel} block h-full px-4 py-4 hover:border-brand hover:bg-brand-light`}>
-                <span className="font-bold text-brand-dark">{item.label}</span>
-                <span className="mt-1 block text-sm text-gray-600">{item.description}</span>
+            <li key={item.href} className="border-b border-gray-200">
+              <Link href={item.href} className="group block py-3">
+                <span className="font-bold group-hover:underline group-hover:underline-offset-4">{item.label}</span>
+                <span className="mt-0.5 block text-sm text-gray-500">{item.description}</span>
               </Link>
             </li>
           ))}

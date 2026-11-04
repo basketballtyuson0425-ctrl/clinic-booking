@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { clinic } from "@/lib/clinic";
 import LoginForm from "../_components/LoginForm";
 
 export const metadata: Metadata = {
@@ -8,9 +9,10 @@ export const metadata: Metadata = {
 /** 院長のログイン画面（/admin/login） */
 export default function AdminLoginPage() {
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="mb-6 text-xl font-bold">ログイン</h1>
+    <main className="mx-auto w-full max-w-sm px-4 py-12">
+      <p className="text-lg font-bold">{clinic.name}</p>
+      <h1 className="mb-8 text-sm text-gray-600">予約管理 ログイン</h1>
       <LoginForm />
-    </div>
+    </main>
   );
 }

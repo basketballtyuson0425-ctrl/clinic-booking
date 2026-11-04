@@ -6,7 +6,7 @@ import { alertBox } from "@/components/ui";
 import { fetchCalendar, type CalendarDay } from "@/lib/adminApi";
 import { formatTime, todayString, weekdayOf, WEEKDAY_LABELS } from "@/lib/date";
 import DayEditor from "./DayEditor";
-import { adminSecondaryButton, panel } from "./styles";
+import { adminQuietButton } from "./styles";
 import { useAdminError } from "./useAdminError";
 import WeeklyEditor from "./WeeklyEditor";
 
@@ -55,16 +55,16 @@ export default function CalendarView({ month: requestedMonth }: { month: string 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">営業日カレンダー</h1>
+        <h1 className="text-2xl font-bold">営業日カレンダー</h1>
         <nav aria-label="月の切り替え" className="flex items-center gap-2">
-          <Link href={`/admin/calendar?month=${shiftMonth(month, -1)}`} className={adminSecondaryButton}>
-            前の月
+          <Link href={`/admin/calendar?month=${shiftMonth(month, -1)}`} className={adminQuietButton}>
+            ‹ 前の月
           </Link>
           <span className="min-w-28 text-center font-bold">
             {year}年{monthNumber}月
           </span>
-          <Link href={`/admin/calendar?month=${shiftMonth(month, 1)}`} className={adminSecondaryButton}>
-            次の月
+          <Link href={`/admin/calendar?month=${shiftMonth(month, 1)}`} className={adminQuietButton}>
+            次の月 ›
           </Link>
         </nav>
       </div>
@@ -77,12 +77,13 @@ export default function CalendarView({ month: requestedMonth }: { month: string 
       {!error && days === null && <p className="py-6 text-center text-gray-500">読み込み中…</p>}
 
       {days && (
-        <div className={`${panel} p-2`}>
-          <div className="grid grid-cols-7 gap-1 text-center">
+        <div>
+          {/* マスを箱で並べず、罫線の格子にする（上と左の線は外枠、右と下の線は各マスが引く） */}
+          <div className="grid grid-cols-7 border-t border-l border-gray-200 text-center">
             {WEEKDAY_LABELS.map((label, index) => (
               <div
                 key={label}
-                className={`py-1 text-xs font-bold ${index === 0 ? "text-red-600" : index === 6 ? "text-blue-600" : "text-gray-600"}`}
+                className={`border-r border-b border-gray-300 py-1 text-xs ${index === 0 ? "text-red-600" : index === 6 ? "text-blue-600" : "text-gray-500"}`}
               >
                 {label}
               </div>
@@ -90,7 +91,7 @@ export default function CalendarView({ month: requestedMonth }: { month: string 
 
             {/* 1日の曜日に合わせて、前を空ける */}
             {Array.from({ length: weekdayOf(days[0].date) }, (_, index) => (
-              <div key={`blank-${index}`} />
+              <div key={`blank-${index}`} className="border-r border-b border-gray-200" />
             ))}
 
             {days.map((day) => (
@@ -103,7 +104,7 @@ export default function CalendarView({ month: requestedMonth }: { month: string 
               />
             ))}
           </div>
-          <p className="mt-2 px-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-gray-500">
             日付を押すと、その日の営業時間を確認・変更できます。「個別」はその日だけの設定がある日です。
           </p>
         </div>
@@ -143,17 +144,18 @@ function DayCell({
       aria-label={`${day.date} ${day.holiday_name ?? ""} ${day.is_closed ? "休診" : hoursLabel} 予約${day.reservation_count}件${
         day.needs_contact_count > 0 ? ` 要連絡${day.needs_contact_count}件` : ""
       }`}
-      className={`flex min-h-16 flex-col items-stretch gap-0.5 rounded-md border p-1 text-left text-xs sm:min-h-24 ${
+      className={`flex min-h-16 flex-col items-stretch gap-0.5 border-r border-b border-gray-200 p-1 text-left sm:p-1.5 text-xs sm:min-h-24 ${
         isSelected
-          ? "border-brand bg-brand-light ring-2 ring-brand"
+          ? "bg-brand-light outline-2 -outline-offset-2 outline-brand"
           : day.is_closed
-            ? "border-gray-200 bg-gray-100 text-gray-500 hover:bg-gray-200"
-            : "border-gray-200 bg-white hover:bg-gray-50"
+            ? "bg-gray-50 text-gray-500 hover:bg-gray-100"
+            : "bg-white hover:bg-gray-50"
       }`}
     >
       <span className="flex items-center justify-between">
-        <span className={`text-sm font-bold ${isToday ? "rounded bg-brand px-1 text-white" : ""}`}>{dayNumber}</span>
-        {day.has_override && <span className="rounded bg-blue-100 px-1 text-[10px] text-blue-800">個別</span>}
+        {/* 今日は数字に下線を引く（塗りつぶすと、選んだ日の色とまぎらわしいため） */}
+        <span className={`text-sm ${isToday ? "border-b-2 border-gray-900 font-bold" : ""}`}>{dayNumber}</span>
+        {day.has_override && <span className="text-[10px] text-gray-500">個別</span>}
       </span>
       {day.holiday_name && <span className="truncate text-[10px] text-red-700">{day.holiday_name}</span>}
       {/* スマートフォンでは幅が狭いので、営業時間は「営」「休」だけにする */}
@@ -169,7 +171,7 @@ function DayCell({
       <span className="font-bold sm:hidden">{day.is_closed ? "休" : "営"}</span>
       {day.reservation_count > 0 && <span className="text-gray-700">予約{day.reservation_count}</span>}
       {day.needs_contact_count > 0 && (
-        <span className="rounded bg-amber-500 px-1 text-center font-bold text-white">要連絡{day.needs_contact_count}</span>
+        <span className="font-bold text-alert">要連絡{day.needs_contact_count}</span>
       )}
     </button>
   );

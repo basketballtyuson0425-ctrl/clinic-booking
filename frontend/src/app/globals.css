@@ -8,6 +8,7 @@
   --color-brand: #2f7d5b; /* 基調の緑 */
   --color-brand-dark: #1f5a40; /* 押したとき・強調 */
   --color-brand-light: #e8f3ed; /* 薄い背景 */
+  --color-alert: #c0361f; /* 朱色。要連絡・メールの送信失敗など、院長の対応が必要なものだけに使う */
   --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic",
     "Meiryo", sans-serif;
 }
