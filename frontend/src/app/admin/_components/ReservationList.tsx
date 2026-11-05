@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { alertBox } from "@/components/ui";
@@ -14,12 +15,33 @@ import Pagination from "./Pagination";
 import ReservationTable from "./ReservationTable";
 import { adminPrimaryButton, adminQuietButton, underlineInput } from "./styles";
 import { useAdminError } from "./useAdminError";
+import WeekCalendar from "./WeekCalendar";
+
+export type ReservationView = "week" | "list";
+
+const EMPTY_FILTERS: ReservationFilters = {
+  date: "",
+  name: "",
+  phone: "",
+  status: "",
+  includePast: false,
+  needsContact: false,
+  page: 1,
+};
 
 /**
- * 予約一覧（/admin/reservations）。
+ * 予約一覧（/admin/reservations）。開いたときは週のカレンダー、「一覧」に切り替えると表を出す。
  * 絞り込みの条件は URL の ? 以降に入れる。詳細を開いてから「戻る」で戻っても、同じ条件の一覧が表示される
  */
-export default function ReservationList({ filters }: { filters: ReservationFilters }) {
+export default function ReservationList({
+  filters,
+  view,
+  week,
+}: {
+  filters: ReservationFilters;
+  view: ReservationView;
+  week: string | null;
+}) {
   const router = useRouter();
   const toErrorMessage = useAdminError();
   const [result, setResult] = useState<Paginated<AdminReservation> | null>(null);
@@ -28,6 +50,8 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
   const [draft, setDraft] = useState(filters);
 
   useEffect(() => {
+    // 週のカレンダーは WeekCalendar が自分で読み込む
+    if (view !== "list") return;
     let ignore = false;
     fetchReservations(filters)
       .then((response) => {
@@ -39,22 +63,42 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
     return () => {
       ignore = true;
     };
-  }, [filters, toErrorMessage]);
+  }, [filters, view, toErrorMessage]);
 
+  /** 一覧の URL。条件がないときも view=list を付ける（何も付けないと、週のカレンダーになるため） */
   function hrefFor(next: Partial<ReservationFilters>): string {
     const query = reservationFiltersToQuery(next);
-    return query === "" ? "/admin/reservations" : `/admin/reservations?${query}`;
+    return `/admin/reservations?view=list${query === "" ? "" : `&${query}`}`;
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // 条件を変えたら1ページ目から表示する
+    // 条件を変えたら1ページ目から表示する。検索の結果は表で見るほうが読みやすいので、カレンダーからでも一覧に切り替える
     router.push(hrefFor({ ...draft, name: draft.name.trim(), phone: draft.phone.trim(), page: 1 }));
+  }
+
+  function handleClear() {
+    if (view === "list") {
+      router.push(hrefFor({}));
+    } else {
+      // カレンダーは条件で絞り込んでいないので、入力欄を空にするだけでよい
+      setDraft(EMPTY_FILTERS);
+    }
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">予約一覧</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h1 className="text-2xl font-bold">予約一覧</h1>
+        <nav aria-label="表示の切り替え" className="flex gap-5 text-sm">
+          <ViewLink href="/admin/reservations" current={view === "week"}>
+            カレンダー
+          </ViewLink>
+          <ViewLink href={hrefFor({})} current={view === "list"}>
+            一覧
+          </ViewLink>
+        </nav>
+      </div>
 
       {/* 絞り込みは画面の脇役なので、箱で囲まず、下線だけの入力欄を横に並べる */}
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-x-6 gap-y-4">
@@ -95,6 +139,7 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
           >
             <option value="">すべて</option>
             <option value="reserved">予約中</option>
+            <option value="visited">来院済み</option>
             <option value="cancelled">キャンセル済み</option>
           </select>
         </Filter>
@@ -119,7 +164,7 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
           </label>
         </div>
         <div className="flex w-full items-center justify-between gap-4 sm:ml-auto sm:w-auto">
-          <button type="button" className={adminQuietButton} onClick={() => router.push("/admin/reservations")}>
+          <button type="button" className={adminQuietButton} onClick={handleClear}>
             条件をクリア
           </button>
           <button type="submit" className={adminPrimaryButton}>
@@ -128,20 +173,22 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
         </div>
       </form>
 
+      {view === "week" && <WeekCalendar week={week} />}
+
       {error && (
         <p className={alertBox} role="alert">
           {error}
         </p>
       )}
-      {!error && result === null && <p className="py-6 text-center text-gray-500">読み込み中…</p>}
+      {view === "list" && !error && result === null && <p className="py-6 text-center text-gray-500">読み込み中…</p>}
 
       {result && (
         <>
           <p className="text-xs text-gray-500">
             {result.meta.total} 件
             {result.meta.total > 0 && `（${result.meta.from}〜${result.meta.to} 件目を表示）`}
-            {/* 日付を指定したときは、過去の日でもその日の予約を表示する（「過去の予約も表示」は関係しない） */}
-            {!filters.date && !filters.includePast && "　今日以降の予約を表示しています"}
+            {/* 日付を指定したとき・来院済みで絞ったときは、過去の予約も表示する（「過去の予約も表示」は関係しない） */}
+            {!filters.date && !filters.includePast && filters.status !== "visited" && "　今日以降の予約を表示しています"}
           </p>
           <ReservationTable reservations={result.data} />
           <Pagination
@@ -152,6 +199,23 @@ export default function ReservationList({ filters }: { filters: ReservationFilte
         </>
       )}
     </div>
+  );
+}
+
+/** 「カレンダー｜一覧」の切り替え。いま表示している方は太字と下線 */
+function ViewLink({ href, current, children }: { href: string; current: boolean; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-current={current ? "page" : undefined}
+      className={
+        current
+          ? "font-bold underline decoration-2 underline-offset-8"
+          : "text-gray-600 underline-offset-8 hover:text-gray-900 hover:underline"
+      }
+    >
+      {children}
+    </Link>
   );
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CreateReservationRequest;
 use App\Http\Requests\Admin\ListReservationsRequest;
@@ -31,13 +32,15 @@ class ReservationController extends Controller
     public function index(ListReservationsRequest $request, HoursImpact $impact): AnonymousResourceCollection
     {
         $filters = $request->validated();
+        $status = $filters['status'] ?? null;
         $query = Reservation::query()->with('latestMailLog');
 
         if (isset($filters['date'])) {
             // 日付を指定したときは、過去の日付でもその日の予約を返す
             $day = CarbonImmutable::parse($filters['date']);
             $query->whereBetween('start_at', [$day->startOfDay(), $day->endOfDay()]);
-        } elseif (! $request->boolean('include_past')) {
+        } elseif (! $request->boolean('include_past') && $status !== ListReservationsRequest::STATUS_VISITED) {
+            // 来院済みはほとんどが過去の予約なので、「過去も表示」を付けなくても過去の分を返す
             $query->where('start_at', '>=', CarbonImmutable::today());
         }
 
@@ -47,9 +50,13 @@ class ReservationController extends Controller
         if (isset($filters['phone'])) {
             $this->whereContains($query, 'phone_key', Reservation::normalizePhone($filters['phone']));
         }
-        if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
+        // 来院済み（予約中で、終了時刻を過ぎたもの）と予約中（まだ終わっていないもの）は重ならないように分ける
+        match ($status) {
+            ListReservationsRequest::STATUS_VISITED => $query->where('status', ReservationStatus::Reserved)->where('end_at', '<', now()),
+            ReservationStatus::Reserved->value => $query->where('status', ReservationStatus::Reserved)->where('end_at', '>=', now()),
+            ReservationStatus::Cancelled->value => $query->where('status', ReservationStatus::Cancelled),
+            default => null,
+        };
         if ($request->boolean('needs_contact')) {
             $query->whereIn('id', $impact->needsContactIds());
         }

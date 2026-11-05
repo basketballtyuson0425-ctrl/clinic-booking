@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\BusinessDayController;
 use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\MailLogController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\WeeklyScheduleController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\ManageReservationController;
@@ -65,6 +66,9 @@ Route::prefix('/admin')
                     Route::post('/cancel', [AdminReservationController::class, 'cancel']);
                     Route::post('/resend-mail', [AdminReservationController::class, 'resendMail']);
                 });
+
+            // 週のカレンダー・ダッシュボード用の予定表（日ごとの営業時間と予約）
+            Route::get('/schedule', [ScheduleController::class, 'show']);
 
             Route::get('/mail-logs', [MailLogController::class, 'index']);
 

@@ -11,6 +11,12 @@ use Illuminate\Validation\Rule;
  */
 class ListReservationsRequest extends FormRequest
 {
+    /**
+     * 状態の絞り込みの「来院済み」。DB には保存しない状態なので、予約の状態（ReservationStatus）とは別に決める。
+     * 「予約中で、終了時刻を過ぎたもの」を来院済みとして扱う
+     */
+    public const STATUS_VISITED = 'visited';
+
     public function authorize(): bool
     {
         return true;
@@ -35,7 +41,7 @@ class ListReservationsRequest extends FormRequest
             'date' => ['nullable', 'date_format:Y-m-d'],
             'name' => ['nullable', 'string', 'max:100'],
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9-]+$/'],
-            'status' => ['nullable', Rule::enum(ReservationStatus::class)],
+            'status' => ['nullable', Rule::in([...array_column(ReservationStatus::cases(), 'value'), self::STATUS_VISITED])],
             'include_past' => ['nullable', 'boolean'],
             'needs_contact' => ['nullable', 'boolean'],
             'page' => ['nullable', 'integer', 'min:1'],

@@ -164,6 +164,29 @@ class AdminReservationListTest extends TestCase
         $this->getJson('/api/admin/reservations?status=unknown')->assertUnprocessable();
     }
 
+    public function test_来院済みで絞ると終了時刻を過ぎた予約中の予約を過去の分も含めて返す(): void
+    {
+        $this->login();
+        $this->reservation('2026-11-04 10:00', ['patient_name' => '昨日 太郎']);
+        $this->reservation('2026-11-05 07:30', ['patient_name' => '早朝 花子']); // 今日の 8:00 に終わった
+        $this->reservation('2026-11-04 10:30', ['patient_name' => '取消 次郎'])->cancel(CancelledBy::Admin);
+        $this->reservation('2026-11-06 10:00'); // まだ来ていない
+
+        // 「過去の予約も表示」を付けなくても、過去の来院済みを返す
+        $this->assertSame(['2026-11-04 10:00', '2026-11-05 07:30'], $this->listedStartAts('?status=visited'));
+    }
+
+    public function test_予約中で絞ると来院済みは含めない(): void
+    {
+        $this->login();
+        $this->reservation('2026-11-04 10:00', ['patient_name' => '昨日 太郎']);
+        $this->reservation('2026-11-05 07:30', ['patient_name' => '早朝 花子']);
+        $this->reservation('2026-11-06 10:00');
+
+        $this->assertSame(['2026-11-06 10:00'], $this->listedStartAts('?status=reserved&include_past=1'));
+        $this->assertSame(['2026-11-06 10:00'], $this->listedStartAts('?status=reserved'));
+    }
+
     public function test_50件ずつに分けて返す(): void
     {
         $this->login();

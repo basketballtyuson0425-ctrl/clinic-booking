@@ -63,7 +63,7 @@ export type ReservationFilters = {
   date: string; // "2026-10-20"。空ならすべての日
   name: string;
   phone: string;
-  status: ReservationStatus | "";
+  status: ReservationStatus | "visited" | ""; // visited＝来院済み（予約中で、終了時刻を過ぎたもの）
   includePast: boolean;
   needsContact: boolean; // 要連絡の予約だけ
   page: number;
@@ -169,6 +169,23 @@ export function reservationFiltersToQuery(filters: Partial<ReservationFilters>):
 
 export function fetchReservations(filters: Partial<ReservationFilters>): Promise<Paginated<AdminReservation>> {
   return adminRequest(`/api/admin/reservations?${reservationFiltersToQuery(filters)}`);
+}
+
+/** 予定表の1日分（GET /api/admin/schedule）。予約はキャンセル済みを除き、時刻の順に並ぶ */
+export type ScheduleDay = {
+  date: string;
+  is_closed: boolean;
+  am: Period | null; // 休みの枠は null
+  pm: Period | null;
+  holiday_name: string | null;
+  reservations: AdminReservation[];
+};
+
+/** from（"2026-11-02"）から days 日分（1〜14）の営業時間と予約。週のカレンダーとダッシュボードで使う */
+export async function fetchSchedule(from: string, days: number): Promise<ScheduleDay[]> {
+  const params = new URLSearchParams({ from, days: String(days) });
+  const response = await adminRequest<{ days: ScheduleDay[] }>(`/api/admin/schedule?${params.toString()}`);
+  return response.days;
 }
 
 export function fetchReservation(id: string | number): Promise<ReservationResponse> {
