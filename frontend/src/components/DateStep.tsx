@@ -90,10 +90,12 @@ export default function DateStep({ onSelect }: Props) {
               disabled={!canSelect}
               onClick={() => onSelect(day.date)}
               aria-label={`${formatDate(day.date)} ${status}`}
+              // 空きの日を全部緑の枠にすると、どれも同じに見えて目立たない。
+              // 押せる日だけを灰色の枠の白いマスにして ○ を緑にし、満席・休診の日は枠を消して灰色の文字だけにする
               className={`flex min-h-14 flex-col items-center justify-center rounded-md border text-sm ${
                 canSelect
-                  ? "border-brand bg-white text-gray-900 hover:bg-brand-light"
-                  : "border-gray-200 bg-gray-100 text-gray-400"
+                  ? "border-gray-300 bg-white text-gray-900 hover:border-brand hover:bg-brand-light"
+                  : "border-transparent text-gray-400"
               }`}
             >
               <span>{label}</span>

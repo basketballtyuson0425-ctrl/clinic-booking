@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import DateStep from "@/components/DateStep";
 import TimeStep from "@/components/TimeStep";
-import { alertBox, dangerButton, primaryButton, secondaryButton, successBox } from "@/components/ui";
+import { alertBox, dangerButton, infoList, primaryButton, secondaryButton, successBox } from "@/components/ui";
 import {
   ApiError,
   cancelManagedReservation,
@@ -220,12 +220,12 @@ export default function ManageReservation({ token }: Props) {
     return (
       <div className="space-y-5">
         <h2 className="text-lg font-bold">予約日時を次のとおり変更します</h2>
-        <dl className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-          <div className="px-4 py-3">
+        <dl className={infoList}>
+          <div className="py-3">
             <dt className="text-sm text-gray-600">変更前</dt>
             <dd className="mt-1 text-base text-gray-500 line-through">{currentLabel}</dd>
           </div>
-          <div className="px-4 py-3">
+          <div className="py-3">
             <dt className="text-sm text-gray-600">変更後</dt>
             <dd className="mt-1 text-lg font-bold">{formatDateTime(`${newDate} ${newTime}`)}</dd>
           </div>
@@ -277,7 +277,7 @@ export default function ManageReservation({ token }: Props) {
     return (
       <div className="space-y-5">
         <h2 className="text-lg font-bold">次のご予約をキャンセルします。よろしいですか？</h2>
-        <p className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-lg font-bold">{currentLabel}</p>
+        <p className="border-y border-gray-300 py-3 text-lg font-bold">{currentLabel}</p>
         {errorBox}
         <div className="space-y-3">
           <button type="button" className={dangerButton} onClick={cancel} disabled={submitting}>
@@ -370,7 +370,7 @@ function CannotModifyNotice({ reason }: { reason: ManagedReservation["cannot_mod
       : "予約時刻の1時間前を過ぎたため、このページからは変更・キャンセルできません。";
 
   return (
-    <p className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+    <p className="text-sm text-gray-700">
       {message}
       <br />
       ご予約の変更・キャンセルは、お電話でお願いします。

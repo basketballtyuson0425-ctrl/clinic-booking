@@ -6,7 +6,7 @@ import { clinic } from "@/lib/clinic";
 export default function InvalidLink() {
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-gray-200 bg-white px-4 py-5">
+      <div>
         <h2 className="text-lg font-bold">このページは無効か、有効期限が切れています</h2>
         <p className="mt-2 text-sm text-gray-700">
           ご予約の時間を過ぎた場合や、URL が正しくない場合に表示されます。メールに記載の URL を、もう一度ご確認ください。

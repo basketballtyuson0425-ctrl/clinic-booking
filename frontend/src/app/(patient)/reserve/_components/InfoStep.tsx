@@ -82,7 +82,8 @@ export default function InfoStep({ startAt, form, initialErrors, onChange, onNex
 
       <fieldset>
         <legend className="mb-2 font-bold">
-          初回／再来 <RequiredBadge />
+          初回／再来
+          <RequiredMark />
         </legend>
         <div className="grid grid-cols-2 gap-2">
           {(
@@ -182,12 +183,12 @@ export default function InfoStep({ startAt, form, initialErrors, onChange, onNex
   );
 }
 
-function RequiredBadge() {
-  return <span className="ml-1 rounded bg-red-600 px-1.5 py-0.5 text-xs font-normal text-white">必須</span>;
-}
-
-function OptionalBadge() {
-  return <span className="ml-1 rounded bg-gray-400 px-1.5 py-0.5 text-xs font-normal text-white">任意</span>;
+/**
+ * 必須の印。赤い札が欄ごとに並ぶと強調が多すぎるので、管理画面と同じく灰色の小さな文字にする。
+ * 赤は入力の誤り（欄の下のエラー文）だけに使う。任意の欄には印を付けない
+ */
+function RequiredMark() {
+  return <span className="ml-1 text-xs font-normal text-gray-500">（必須）</span>;
 }
 
 function ErrorText({ id, children }: { id: string; children: ReactNode }) {
@@ -218,7 +219,7 @@ function Field({
     <div>
       <label htmlFor={id} className="mb-2 block font-bold">
         {label}
-        {required ? <RequiredBadge /> : <OptionalBadge />}
+        {required && <RequiredMark />}
       </label>
       {children}
       {hint && (

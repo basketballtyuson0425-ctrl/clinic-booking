@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReservationCreated } from "@/lib/api";
 import { clinic } from "@/lib/clinic";
 import { formatDateTime } from "@/lib/date";
-import { primaryButton } from "@/components/ui";
+import { infoList, primaryButton, successBox } from "@/components/ui";
 
 type Props = {
   result: ReservationCreated;
@@ -16,21 +16,19 @@ export default function DoneStep({ result }: Props) {
     <div className="space-y-5">
       <h2 className="text-center text-xl font-bold text-brand-dark">予約が完了しました</h2>
 
-      <dl className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-        <div className="px-4 py-3">
+      <dl className={infoList}>
+        <div className="py-3">
           <dt className="text-sm text-gray-600">ご予約日時</dt>
           <dd className="mt-1 text-lg font-bold">{formatDateTime(result.start_at)}</dd>
         </div>
-        <div className="px-4 py-3">
+        <div className="py-3">
           <dt className="text-sm text-gray-600">氏名</dt>
           <dd className="mt-1 text-base">{result.patient_name} 様</dd>
         </div>
       </dl>
 
       {result.has_email && result.mail_sent && (
-        <p className="rounded-lg bg-brand-light px-4 py-3 text-sm text-brand-dark">
-          ご入力のメールアドレスに確認メールを送信しました。
-        </p>
+        <p className={successBox}>ご入力のメールアドレスに確認メールを送信しました。</p>
       )}
 
       {/* 送信に失敗しても予約は成立している。届かないメールを待たせないよう、はっきり伝える */}

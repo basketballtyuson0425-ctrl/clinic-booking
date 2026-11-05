@@ -2,7 +2,7 @@
 
 import { formatDateTime } from "@/lib/date";
 import { normalizeEmail, normalizePhone, type ReservationForm } from "./form";
-import { alertBox, primaryButton, secondaryButton } from "@/components/ui";
+import { alertBox, infoList, primaryButton, secondaryButton, successBox } from "@/components/ui";
 
 type Props = {
   startAt: string;
@@ -30,9 +30,9 @@ export default function ConfirmStep({ startAt, form, submitting, error, onSubmit
     <div className="space-y-5">
       <h2 className="text-lg font-bold">入力内容をご確認ください</h2>
 
-      <dl className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
+      <dl className={infoList}>
         {rows.map(([label, value]) => (
-          <div key={label} className="px-4 py-3">
+          <div key={label} className="py-3">
             <dt className="text-sm text-gray-600">{label}</dt>
             {/* 改行を含む施術希望内容も、そのまま表示する */}
             <dd className="mt-1 whitespace-pre-wrap break-words text-base">{value}</dd>
@@ -41,7 +41,7 @@ export default function ConfirmStep({ startAt, form, submitting, error, onSubmit
       </dl>
 
       {email === "" && (
-        <p className="rounded-lg bg-brand-light px-4 py-3 text-sm text-brand-dark">
+        <p className={successBox}>
           メールアドレスの入力がないため、確認メールは届きません。ご予約の変更・キャンセルはお電話でお願いします。
         </p>
       )}

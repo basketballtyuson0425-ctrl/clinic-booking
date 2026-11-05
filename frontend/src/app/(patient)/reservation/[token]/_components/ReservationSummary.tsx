@@ -1,3 +1,4 @@
+import { infoList } from "@/components/ui";
 import type { ManagedReservation } from "@/lib/api";
 import { formatDate, formatTime } from "@/lib/date";
 
@@ -17,9 +18,10 @@ export default function ReservationSummary({ reservation }: Props) {
     ["施術希望内容", reservation.treatment_request ?? "（なし）"],
   ];
 
+  // 白い箱や状態の札は使わず、罫線で区切って、状態は文字で示す
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
-      <div className="flex items-start justify-between gap-2 border-b border-gray-200 px-4 py-3">
+    <div className={infoList}>
+      <div className="flex items-start justify-between gap-2 py-3">
         <div>
           <p className="text-sm text-gray-600">ご予約日時</p>
           <p className={`mt-1 text-lg font-bold ${isCancelled ? "text-gray-400 line-through" : ""}`}>
@@ -30,17 +32,13 @@ export default function ReservationSummary({ reservation }: Props) {
             </span>
           </p>
         </div>
-        <span
-          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-            isCancelled ? "bg-gray-200 text-gray-600" : "bg-brand text-white"
-          }`}
-        >
+        <span className={`shrink-0 text-sm font-bold ${isCancelled ? "text-gray-500" : "text-brand"}`}>
           {isCancelled ? "キャンセル済み" : "予約中"}
         </span>
       </div>
       <dl className="divide-y divide-gray-200">
         {rows.map(([label, value]) => (
-          <div key={label} className="px-4 py-3">
+          <div key={label} className="py-3">
             <dt className="text-sm text-gray-600">{label}</dt>
             <dd className="mt-1 whitespace-pre-wrap break-words text-base">{value}</dd>
           </div>

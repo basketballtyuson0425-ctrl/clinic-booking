@@ -82,9 +82,7 @@ export default function TimeStep({ date, notice, onSelect, onBack }: Props) {
           </div>
 
           {slots === null ? (
-            <p className="rounded-lg bg-gray-100 py-8 text-center text-gray-600">
-              {activePeriod === "am" ? "午前" : "午後"}は休診です
-            </p>
+            <p className="py-8 text-center text-gray-600">{activePeriod === "am" ? "午前" : "午後"}は休診です</p>
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {slots.map((slot) => (
@@ -94,10 +92,11 @@ export default function TimeStep({ date, notice, onSelect, onBack }: Props) {
                   disabled={!slot.available}
                   onClick={() => onSelect(slot.time)}
                   aria-label={`${formatTime(slot.time)} ${slot.available ? "空きあり" : "予約できません"}`}
+                  // 日付のカレンダーと同じく、押せる枠だけを灰色の枠の白いマスにして ○ を緑にする
                   className={`flex min-h-14 flex-col items-center justify-center rounded-md border ${
                     slot.available
-                      ? "border-brand bg-white hover:bg-brand-light"
-                      : "border-gray-200 bg-gray-100 text-gray-400"
+                      ? "border-gray-300 bg-white hover:border-brand hover:bg-brand-light"
+                      : "border-transparent text-gray-400"
                   }`}
                 >
                   <span className="text-base">{formatTime(slot.time)}</span>
