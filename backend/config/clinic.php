@@ -6,6 +6,7 @@
 return [
     'name' => env('CLINIC_NAME', ''),
     'phone' => env('CLINIC_PHONE', ''),
+    'address' => env('CLINIC_ADDRESS', ''),
 
     // 患者側の画面（Next.js）の URL。メールに載せる予約管理ページのリンクに使う
     'frontend_url' => rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/'),

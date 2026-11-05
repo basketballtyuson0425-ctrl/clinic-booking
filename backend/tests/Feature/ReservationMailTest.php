@@ -30,6 +30,7 @@ class ReservationMailTest extends TestCase
         config([
             'clinic.name' => 'テスト接骨院',
             'clinic.phone' => '000-111-2222',
+            'clinic.address' => 'テスト県テスト市1-2-3',
             'clinic.frontend_url' => 'https://clinic.example.test',
         ]);
     }
@@ -127,6 +128,7 @@ class ReservationMailTest extends TestCase
             $mail->assertSeeInText('施術希望内容：腰痛');
             $mail->assertSeeInText("https://clinic.example.test/reservation/{$token}");
             $mail->assertSeeInText('予約時刻の1時間前まで');
+            $mail->assertSeeInText('住所：テスト県テスト市1-2-3');
             $mail->assertSeeInText('電話：000-111-2222');
 
             return true;

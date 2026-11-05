@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ReservationController as AdminReservationControll
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\WeeklyScheduleController;
 use App\Http\Controllers\AvailabilityController;
+use App\Http\Controllers\ClinicHoursController;
 use App\Http\Controllers\ManageReservationController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Middleware\PreventCaching;
@@ -22,6 +23,9 @@ Route::middleware('throttle:public-api')->group(function () {
     Route::get('/availability/dates', [AvailabilityController::class, 'dates']);
     Route::get('/availability/{date}', [AvailabilityController::class, 'show'])
         ->where('date', '\d{4}-\d{2}-\d{2}');
+
+    // 院の受付時間（曜日ごとの基本）。患者側の画面の下の表に使う
+    Route::get('/clinic/hours', [ClinicHoursController::class, 'show']);
 
     // 予約の登録は、いたずらで大量に入れられないよう、さらに厳しく制限する
     Route::post('/reservations', [ReservationController::class, 'store'])

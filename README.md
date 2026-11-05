@@ -53,7 +53,7 @@ php artisan admin:create      # 院長のログイン用アカウントを作成
 
 | 名前 | 内容 |
 |---|---|
-| `CLINIC_NAME`・`CLINIC_PHONE` | メールに記載する接骨院の名前と電話番号 |
+| `CLINIC_NAME`・`CLINIC_PHONE`・`CLINIC_ADDRESS` | メールに記載する接骨院の名前・電話番号・住所 |
 | `FRONTEND_URL` | 患者側の画面の URL（メールに載せる予約管理ページのリンクに使います） |
 | `MAIL_MAILER` など `MAIL_*` | メールの送信方法。開発中は `log`（実際には送信しない） |
 | `SANCTUM_STATEFUL_DOMAINS` | 管理画面の場所（例：`localhost:3000`）。ここからのリクエストにだけ、ログインのセッションと CSRF 対策を付けます |
@@ -74,6 +74,7 @@ cp .env.example .env.local    # Windows PowerShell の場合: Copy-Item .env.exa
 | `BACKEND_URL` | Laravel の URL（`/api` と `/sanctum` をここへ転送します） |
 | `NEXT_PUBLIC_CLINIC_NAME` | 画面に表示する接骨院の名前 |
 | `NEXT_PUBLIC_CLINIC_PHONE` | 画面に表示する電話番号（変更・キャンセルの問い合わせ先） |
+| `NEXT_PUBLIC_CLINIC_ADDRESS` | 画面の下の院の案内に表示する住所（「地図を開く」のリンクにも使います） |
 | `CLINIC_PROXY_SECRET` | Laravel との合言葉（本番用。開発では空のままでかまいません） |
 
 ## 開発サーバーの起動
@@ -167,7 +168,7 @@ php artisan optimize                                       # 設定・ルート�
 | `SESSION_SECURE_COOKIE` | `true` | ログインの Cookie を HTTPS の通信でだけ送るため |
 | `SANCTUM_STATEFUL_DOMAINS` | `clinic.example.jp` | 画面のドメイン（`https://` は付けない）。ここからのリクエストにだけ、ログインのセッションと CSRF 対策を付ける |
 | `FRONTEND_URL` | `https://clinic.example.jp` | メールに載せる予約管理ページのリンクに使う |
-| `CLINIC_NAME`・`CLINIC_PHONE` | 接骨院の名前と電話番号 | メールに記載する |
+| `CLINIC_NAME`・`CLINIC_PHONE`・`CLINIC_ADDRESS` | 接骨院の名前・電話番号・住所 | メールに記載する |
 | `CLINIC_PROXY_SECRET` | 1 で作った合言葉 | |
 | `MAIL_MAILER` | `smtp` | `MAIL_HOST`・`MAIL_PORT`・`MAIL_USERNAME`・`MAIL_PASSWORD`・`MAIL_SCHEME`（`smtps` など）を、レンタルサーバーやメール送信サービスの案内どおりに設定する |
 | `MAIL_FROM_ADDRESS` | 接骨院のメールアドレス | 送信元。送信ドメイン認証（SPF・DKIM）を設定したドメインのアドレスにすると、迷惑メールに入りにくくなる |
@@ -202,6 +203,7 @@ SHOW FULL COLUMNS FROM reservations WHERE Field IN ('name_key', 'phone_key');
 | `BACKEND_URL` | `https://api.clinic.example.jp` |
 | `NEXT_PUBLIC_CLINIC_NAME` | 接骨院の名前 |
 | `NEXT_PUBLIC_CLINIC_PHONE` | 電話番号 |
+| `NEXT_PUBLIC_CLINIC_ADDRESS` | 住所 |
 | `CLINIC_PROXY_SECRET` | 1 で作った合言葉（`NEXT_PUBLIC_` を付けない。付けるとブラウザに渡ってしまう） |
 
 3. デプロイしたあと、独自ドメイン（`clinic.example.jp`）を設定します

@@ -34,4 +34,25 @@ class WeeklySchedule extends Model
 
         return array_map('intval', explode(',', $this->closed_weeks_of_month));
     }
+
+    /**
+     * 画面に返す形（時刻は "09:00"、休診にする第N週は [1, 3]）。
+     * 管理画面の設定と、患者側の受付時間の表で同じ形を使う
+     *
+     * @return array<string, mixed>
+     */
+    public function toDisplayArray(): array
+    {
+        $time = fn (?string $value) => $value === null ? null : substr($value, 0, 5);
+
+        return [
+            'day_of_week' => $this->day_of_week,
+            'is_closed' => $this->is_closed,
+            'am_start' => $time($this->am_start),
+            'am_end' => $time($this->am_end),
+            'pm_start' => $time($this->pm_start),
+            'pm_end' => $time($this->pm_end),
+            'closed_weeks' => $this->closedWeeks(),
+        ];
+    }
 }

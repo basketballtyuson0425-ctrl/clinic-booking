@@ -2,4 +2,5 @@
 export const clinic = {
   name: process.env.NEXT_PUBLIC_CLINIC_NAME ?? "",
   phone: process.env.NEXT_PUBLIC_CLINIC_PHONE ?? "",
+  address: process.env.NEXT_PUBLIC_CLINIC_ADDRESS ?? "",
 };

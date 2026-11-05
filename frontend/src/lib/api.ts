@@ -175,3 +175,19 @@ export function updateManagedReservation(
 export function cancelManagedReservation(token: string): Promise<ManageResponse> {
   return request<ManageResponse>(`/api/manage/${token}/cancel`, { method: "POST" });
 }
+
+/** 曜日ごとの基本の受付時間（GET /api/clinic/hours）。時刻は "09:00" の形、休診の欄は null */
+export type WeeklyHours = {
+  day_of_week: number; // 0=日曜〜6=土曜
+  is_closed: boolean;
+  am_start: string | null;
+  am_end: string | null;
+  pm_start: string | null;
+  pm_end: string | null;
+  closed_weeks: number[]; // 休診にする「第N週」（例：[1, 3]）
+};
+
+export async function fetchClinicHours(): Promise<WeeklyHours[]> {
+  const body = await request<{ schedules: WeeklyHours[] }>("/api/clinic/hours");
+  return body.schedules;
+}

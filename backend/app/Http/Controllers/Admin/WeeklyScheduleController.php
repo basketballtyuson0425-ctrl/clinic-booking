@@ -67,24 +67,12 @@ class WeeklyScheduleController extends Controller
     }
 
     /**
-     * 画面に返す形（時刻は "09:00"、休診にする第N週は [1, 3]）
-     *
      * @return list<array<string, mixed>>
      */
     private function schedules(): array
     {
-        $time = fn (?string $value) => $value === null ? null : substr($value, 0, 5);
-
         return WeeklySchedule::orderBy('day_of_week')->get()
-            ->map(fn (WeeklySchedule $schedule) => [
-                'day_of_week' => $schedule->day_of_week,
-                'is_closed' => $schedule->is_closed,
-                'am_start' => $time($schedule->am_start),
-                'am_end' => $time($schedule->am_end),
-                'pm_start' => $time($schedule->pm_start),
-                'pm_end' => $time($schedule->pm_end),
-                'closed_weeks' => $schedule->closedWeeks(),
-            ])
+            ->map(fn (WeeklySchedule $schedule) => $schedule->toDisplayArray())
             ->all();
     }
 
